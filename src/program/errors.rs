@@ -1,66 +1,48 @@
 pub struct AssemblyError {
     message: String,
     step: usize,
-    op: String,
 }
 
 impl AssemblyError {
     pub fn empty_program() -> AssemblyError {
-        return AssemblyError {
+        AssemblyError {
             message: String::from("a program must contain at least one instruction"),
             step: 0,
-            op: String::from("begin"),
-        };
+        }
     }
 
     pub fn invalid_op(op: &[&str], step: usize) -> AssemblyError {
-        return AssemblyError {
+        AssemblyError {
             message: format!("instruction {} is invalid", op.join(".")),
-            step: step,
-            op: op.join("."),
-        };
+            step,
+        }
     }
 
     pub fn missing_param(op: &[&str], step: usize) -> AssemblyError {
-        return AssemblyError {
+        AssemblyError {
             message: format!("malformed instruction {}, parameter is missing", op[0]),
-            step: step,
-            op: op.join("."),
-        };
+            step,
+        }
     }
 
     pub fn extra_param(op: &[&str], step: usize) -> AssemblyError {
-        return AssemblyError {
+        AssemblyError {
             message: format!(
                 "malformed instruction {}, too many parameters provided",
                 op[0]
             ),
-            step: step,
-            op: op.join("."),
-        };
+            step,
+        }
     }
 
     pub fn invalid_param(op: &[&str], step: usize) -> AssemblyError {
-        return AssemblyError {
+        AssemblyError {
             message: format!(
                 "malformed instruction {}, parameter '{}' is invalid",
                 op[0], op[1]
             ),
-            step: step,
-            op: op.join("."),
-        };
-    }
-
-    pub fn message(&self) -> &String {
-        return &self.message;
-    }
-
-    pub fn operation(&self) -> &String {
-        return &self.op;
-    }
-
-    pub fn step(&self) -> usize {
-        return self.step;
+            step,
+        }
     }
 }
 

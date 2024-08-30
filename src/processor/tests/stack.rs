@@ -30,24 +30,24 @@ fn test_mul() {
 
 #[test]
 fn test_read() {
-  let inputs = vec![3];
-  let source = "read";
-  let program = Program::load(source).unwrap();
-  let processor = Processor::run(program, ProgramInputs::new(&inputs)).unwrap();
+    let inputs = vec![3];
+    let source = "read";
+    let program = Program::load(source).unwrap();
+    let processor = Processor::run(program, ProgramInputs::new(&inputs)).unwrap();
 
-  assert_eq!(vec![0, 0, 0, 0, 0], processor.stack.get_stack_state(0));
-  assert_eq!(vec![3, 0, 0, 0, 0], processor.stack.get_stack_state(1));
+    assert_eq!(vec![0, 0, 0, 0, 0], processor.stack.get_stack_state(0));
+    assert_eq!(vec![3, 0, 0, 0, 0], processor.stack.get_stack_state(1));
 }
 
 #[test]
 fn test_push() {
-  let inputs = vec![3];
-  let source = "push.4";
-  let program = Program::load(source).unwrap();
-  let processor = Processor::run(program, ProgramInputs::new(&inputs)).unwrap();
+    let inputs = vec![3];
+    let source = "push.4";
+    let program = Program::load(source).unwrap();
+    let processor = Processor::run(program, ProgramInputs::new(&inputs)).unwrap();
 
-  assert_eq!(vec![0, 0, 0, 0, 0], processor.stack.get_stack_state(0));
-  assert_eq!(vec![4, 0, 0, 0, 0], processor.stack.get_stack_state(1));
+    assert_eq!(vec![0, 0, 0, 0, 0], processor.stack.get_stack_state(0));
+    assert_eq!(vec![4, 0, 0, 0, 0], processor.stack.get_stack_state(1));
 }
 
 #[test]

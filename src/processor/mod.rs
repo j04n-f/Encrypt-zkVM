@@ -43,7 +43,7 @@ impl Processor {
 }
 
 impl std::fmt::Debug for Processor {
-  fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-      return write!(f, "output is {}", self.get_output())
-  }
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "output is {}", self.get_output())
+    }
 }

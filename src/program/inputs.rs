@@ -6,11 +6,12 @@ pub struct ProgramInputs {
 impl ProgramInputs {
     /// Returns `ProgramInputs` initialized with the provided public and secret inputs.
     pub fn new(inputs: &[u128]) -> ProgramInputs {
-        return ProgramInputs {
+        ProgramInputs {
             inputs: inputs.to_vec(),
-        };
+        }
     }
 
+    #[cfg(test)]
     pub fn none() -> ProgramInputs {
         ProgramInputs { inputs: vec![] }
     }

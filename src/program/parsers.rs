@@ -8,7 +8,7 @@ pub fn parse_push(op: &[&str], step: usize) -> Result<OpCode, AssemblyError> {
         return Err(AssemblyError::extra_param(op, step));
     }
 
-    let value = match u128::from_str_radix(&op[1], 10) {
+    let value = match op[1].parse::<u128>() {
         Ok(i) => i,
         Err(_) => return Err(AssemblyError::invalid_param(op, step)),
     };

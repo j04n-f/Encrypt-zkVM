@@ -25,7 +25,7 @@ fn main() -> Result<(), String> {
         Err(err) => return Err(format!("{err}")),
     };
 
-    let processor = match Processor::run(program, ProgramInputs::new(&vec![])) {
+    let processor = match Processor::run(program, ProgramInputs::new(&[])) {
         Ok(output) => output,
         Err(err) => return Err(format!("{err}")),
     };

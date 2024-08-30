@@ -24,13 +24,13 @@ impl Stack {
         let mut tape_a = inputs.get_values().to_vec();
         tape_a.reverse();
 
-        return Stack {
+        Stack {
             registers,
             tape_a,
             max_depth: 0,
             depth: 0,
             step: 0,
-        };
+        }
     }
 
     pub fn execute(&mut self, op_code: OpCode) -> Result<(), StackError> {
@@ -47,25 +47,20 @@ impl Stack {
     }
 
     pub fn trace_length(&self) -> usize {
-        return self.registers[0].len();
-    }
-
-    #[cfg(test)]
-    pub fn current_step(&self) -> usize {
-        return self.step;
+        self.registers[0].len()
     }
 
     #[cfg(test)]
     pub fn get_stack_state(&self, step: usize) -> Vec<u128> {
-      let mut state = Vec::with_capacity(self.registers.len());
-      for i in 0..self.registers.len() {
-          state.push(self.registers[i][step]);
-      }
-      return state;
-  }
+        let mut state = Vec::with_capacity(self.registers.len());
+        for i in 0..self.registers.len() {
+            state.push(self.registers[i][step]);
+        }
+        state
+    }
 
     pub fn get_stack_top(&self) -> u128 {
-        return self.registers[0][self.step];
+        self.registers[0][self.step]
     }
 
     fn op_push(&mut self, value: u128) -> Result<(), StackError> {
@@ -106,12 +101,15 @@ impl Stack {
         self.shift_left(op_code, 2, 1)
     }
 
-    fn shift_left(&mut self, op_code: OpCode, start: usize, pos_count: usize)  -> Result<(), StackError> {
+    fn shift_left(
+        &mut self,
+        op_code: OpCode,
+        start: usize,
+        pos_count: usize,
+    ) -> Result<(), StackError> {
         if self.depth < pos_count {
             return Err(StackError::stack_underflow(op_code, self.step));
         }
-
-        if self.depth < pos_count {}
 
         // shift all values by pos_count to the left
         for i in start..self.depth {

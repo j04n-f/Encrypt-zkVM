@@ -21,7 +21,7 @@ impl Program {
 
         let tokens: Vec<&str> = source.split_whitespace().collect();
 
-        if tokens.len() == 0 {
+        if tokens.is_empty() {
             return Err(AssemblyError::empty_program());
         }
 
@@ -40,7 +40,7 @@ impl Program {
 }
 
 fn parse_op(step: usize, line: &str) -> Result<OpCode, AssemblyError> {
-    let op: Vec<&str> = line.split(".").collect();
+    let op: Vec<&str> = line.split('.').collect();
 
     #[rustfmt::skip]
     return match op[0] {

@@ -1,49 +1,34 @@
 use super::OpCode;
 
 pub struct StackError {
-  message: String,
-  step: usize,
-  op: String,
+    message: String,
+    step: usize,
 }
 
 impl StackError {
-  pub fn stack_underflow(op: OpCode, step: usize) -> StackError {
-      return StackError {
-          message: format!("stack underflow"),
-          step: step,
-          op: op.to_string(),
-      };
-  }
+    pub fn stack_underflow(op: OpCode, step: usize) -> StackError {
+        StackError {
+            message: format!("{op} operation stack underflow"),
+            step,
+        }
+    }
 
-  pub fn empty_inputs(step: usize) -> StackError {
-    return StackError {
-        message: format!("no more inputs to read"),
-        step: step,
-        op: OpCode::Read.to_string(),
-    };
-}
-
-  pub fn message(&self) -> &String {
-      return &self.message;
-  }
-
-  pub fn operation(&self) -> &String {
-      return &self.op;
-  }
-
-  pub fn step(&self) -> usize {
-      return self.step;
-  }
+    pub fn empty_inputs(step: usize) -> StackError {
+        StackError {
+            message: "no more inputs to read".to_string(),
+            step,
+        }
+    }
 }
 
 impl std::fmt::Debug for StackError {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-      write!(f, "stack error at {}: {}", self.step, self.message)
-  }
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "stack error at {}: {}", self.step, self.message)
+    }
 }
 
 impl std::fmt::Display for StackError {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-      write!(f, "stack error at {}: {}", self.step, self.message)
-  }
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "stack error at {}: {}", self.step, self.message)
+    }
 }
