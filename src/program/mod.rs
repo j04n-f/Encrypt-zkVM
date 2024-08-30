@@ -1,10 +1,12 @@
-pub mod opcodes;
-use opcodes::OpCode;
+use crate::processor::OpCode;
 
 mod errors;
 use errors::AssemblyError;
 
 mod parsers;
+
+pub mod inputs;
+pub use inputs::ProgramInputs;
 
 #[cfg(test)]
 mod tests;
@@ -30,6 +32,10 @@ impl Program {
         }
 
         Ok(Program { code })
+    }
+
+    pub fn get_code(&self) -> &[OpCode] {
+        &self.code
     }
 }
 

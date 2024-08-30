@@ -1,4 +1,4 @@
-#[repr(u8)]
+
 #[derive(Copy, Clone, PartialEq)]
 pub enum OpCode {
     Push(u128),
