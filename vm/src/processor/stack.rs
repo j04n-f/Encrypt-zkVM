@@ -2,15 +2,19 @@ use super::OpCode;
 use super::ProgramInputs;
 use super::StackError;
 
+use fhe::{FheUInt8, ServerKey};
+
 const MIN_STACK_DEPTH: usize = 5;
 const MIN_TRACE_LENGTH: usize = 16;
 
 pub struct Stack {
     registers: Vec<Vec<u128>>,
-    tape_a: Vec<u128>,
+    tape_a: Vec<u8>,
+    tape_b: Vec<FheUInt8>,
     max_depth: usize,
     depth: usize,
     step: usize,
+    server_key: ServerKey,
 }
 
 impl Stack {
@@ -21,15 +25,19 @@ impl Stack {
             registers.push(vec![0; MIN_TRACE_LENGTH]);
         }
 
-        let mut tape_a = inputs.get_values().to_vec();
+        let mut tape_a = inputs.get_public();
         tape_a.reverse();
+        let mut tape_b = inputs.get_secret();
+        tape_b.reverse();
 
         Stack {
             registers,
             tape_a,
+            tape_b,
             max_depth: 0,
             depth: 0,
             step: 0,
+            server_key: inputs.get_server_key(),
         }
     }
 
@@ -40,9 +48,12 @@ impl Stack {
         return match op_code {
             OpCode::Push(value) => self.op_push(value),
             OpCode::Read              => self.op_read(),
+            OpCode::Read2             => self.op_read2(),
 
             OpCode::Add               => self.op_add(op_code),
+            OpCode::SAdd              => self.op_sadd(op_code),
             OpCode::Mul               => self.op_mul(op_code),
+            OpCode::SMul              => self.op_smul(op_code),
         };
     }
 
@@ -59,13 +70,17 @@ impl Stack {
         state
     }
 
-    pub fn get_stack_top(&self) -> u128 {
-        self.registers[0][self.step]
+    pub fn get_current_state(&self) -> Vec<u128> {
+        let mut state = Vec::with_capacity(self.registers.len());
+        for i in 0..self.registers.len() {
+            state.push(self.registers[i][self.step]);
+        }
+        state
     }
 
-    fn op_push(&mut self, value: u128) -> Result<(), StackError> {
+    fn op_push(&mut self, value: u8) -> Result<(), StackError> {
         self.shift_right(0, 1);
-        self.registers[0][self.step] = value;
+        self.registers[0][self.step] = value as u128;
         Ok(())
     }
 
@@ -75,7 +90,21 @@ impl Stack {
             Some(value) => value,
             None => return Err(StackError::empty_inputs(self.step)),
         };
-        self.registers[0][self.step] = value;
+        self.registers[0][self.step] = value as u128;
+        Ok(())
+    }
+
+    fn op_read2(&mut self) -> Result<(), StackError> {
+        let ct = match self.tape_b.pop() {
+            Some(value) => value.ciphertext(),
+            None => return Err(StackError::empty_inputs(self.step)),
+        };
+
+        self.shift_right(0, ct.len());
+
+        for (i, value) in ct.iter().enumerate() {
+            self.registers[i][self.step] = *value;
+        }
         Ok(())
     }
 
@@ -86,19 +115,56 @@ impl Stack {
 
         let x = self.registers[0][self.step - 1];
         let y = self.registers[1][self.step - 1];
-        self.registers[0][self.step] = x + y;
+        self.registers[0][self.step] = x.wrapping_add(y);
         self.shift_left(op_code, 2, 1)
+    }
+
+    fn op_sadd(&mut self, op_code: OpCode) -> Result<(), StackError> {
+        if self.depth < self.server_key.lwe_size() + 1 {
+            return Err(StackError::stack_underflow(op_code, self.step));
+        }
+
+        let ct: Vec<u128> = (1..=self.server_key.lwe_size())
+            .map(|i: usize| self.registers[i][self.step - 1])
+            .collect();
+        let scalar = self.registers[0][self.step - 1] as u8;
+
+        let result_ct = self.server_key.scalar_add(&scalar, &FheUInt8::new(&ct));
+
+        for (i, value) in result_ct.ciphertext().iter().enumerate() {
+            self.registers[i][self.step] = *value;
+        }
+
+        self.shift_left(op_code, 6, 1)
     }
 
     fn op_mul(&mut self, op_code: OpCode) -> Result<(), StackError> {
         if self.depth < 2 {
             return Err(StackError::stack_underflow(op_code, self.step));
         }
-        assert!(self.depth >= 2, "stack underflow at step {}", self.step);
         let x = self.registers[0][self.step - 1];
         let y = self.registers[1][self.step - 1];
-        self.registers[0][self.step] = x * y;
+        self.registers[0][self.step] = x.wrapping_mul(y);
         self.shift_left(op_code, 2, 1)
+    }
+
+    fn op_smul(&mut self, op_code: OpCode) -> Result<(), StackError> {
+        if self.depth < self.server_key.lwe_size() + 1 {
+            return Err(StackError::stack_underflow(op_code, self.step));
+        }
+
+        let ct: Vec<u128> = (1..=self.server_key.lwe_size())
+            .map(|i: usize| self.registers[i][self.step - 1])
+            .collect();
+        let scalar = self.registers[0][self.step - 1] as u8;
+
+        let result_ct = self.server_key.scalar_mul(&scalar, &FheUInt8::new(&ct));
+
+        for (i, value) in result_ct.ciphertext().iter().enumerate() {
+            self.registers[i][self.step] = *value;
+        }
+
+        self.shift_left(op_code, 6, 1)
     }
 
     fn shift_left(

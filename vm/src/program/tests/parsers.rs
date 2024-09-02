@@ -23,6 +23,17 @@ fn test_extra_add_param() {
 }
 
 #[test]
+fn test_extra_sadd_param() {
+    let source = "push.1 push.2 sadd.1";
+    let error = Program::load(source).unwrap_err();
+
+    assert_eq!(
+        format!("{error}"),
+        format!("{}", AssemblyError::extra_param(&["sadd"], 3))
+    );
+}
+
+#[test]
 fn test_extra_mul_param() {
     let source = "push.1 push.2 mul.1";
     let error = Program::load(source).unwrap_err();
@@ -34,6 +45,17 @@ fn test_extra_mul_param() {
 }
 
 #[test]
+fn test_extra_smul_param() {
+    let source = "push.1 push.2 smul.1";
+    let error = Program::load(source).unwrap_err();
+
+    assert_eq!(
+        format!("{error}"),
+        format!("{}", AssemblyError::extra_param(&["smul"], 3))
+    );
+}
+
+#[test]
 fn test_extra_read_param() {
     let source = "push.1 push.2 read.1";
     let error = Program::load(source).unwrap_err();
@@ -41,6 +63,17 @@ fn test_extra_read_param() {
     assert_eq!(
         format!("{error}"),
         format!("{}", AssemblyError::extra_param(&["read"], 3))
+    );
+}
+
+#[test]
+fn test_extra_read2_param() {
+    let source = "push.1 push.2 read2.1";
+    let error = Program::load(source).unwrap_err();
+
+    assert_eq!(
+        format!("{error}"),
+        format!("{}", AssemblyError::extra_param(&["read2"], 3))
     );
 }
 

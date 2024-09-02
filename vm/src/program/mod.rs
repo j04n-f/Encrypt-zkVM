@@ -44,11 +44,14 @@ fn parse_op(step: usize, line: &str) -> Result<OpCode, AssemblyError> {
 
     #[rustfmt::skip]
     return match op[0] {
-        "push" => parsers::parse_push(&op, step),
-        "read" => parsers::parse_read(&op, step),
-        "add" =>  parsers::parse_add(&op, step),
-        "mul" =>  parsers::parse_mul(&op, step),
-        _ =>      Err(AssemblyError::invalid_op(&op, step)),
+        "push"  => parsers::parse_push(&op, step),
+        "read"  => parsers::parse_read(&op, step),
+        "read2" => parsers::parse_read2(&op, step),
+        "add"   => parsers::parse_add(&op, step),
+        "sadd"  => parsers::parse_sadd(&op, step),
+        "mul"   => parsers::parse_mul(&op, step),
+        "smul"  => parsers::parse_smul(&op, step),
+        _       => Err(AssemblyError::invalid_op(&op, step)),
     };
 }
 

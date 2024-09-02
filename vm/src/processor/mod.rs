@@ -7,6 +7,7 @@ mod stack;
 use stack::Stack;
 
 mod errors;
+
 use errors::StackError;
 
 #[cfg(test)]
@@ -33,8 +34,8 @@ impl Processor {
         Ok(processor)
     }
 
-    pub fn get_output(&self) -> u128 {
-        self.stack.get_stack_top()
+    pub fn get_output(&self) -> Vec<u128> {
+        self.stack.get_current_state()
     }
 
     fn execute_op(&mut self, op_code: OpCode) -> Result<(), StackError> {
@@ -44,6 +45,6 @@ impl Processor {
 
 impl std::fmt::Debug for Processor {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "output is {}", self.get_output())
+        write!(f, "output is {:?}", self.get_output())
     }
 }

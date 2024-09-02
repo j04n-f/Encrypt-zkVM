@@ -1,0 +1,9 @@
+[package]
+name = "linear_regression"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bincode = { workspace = true }
+fhe = { path = "../../fhe" }
+vm = { path = "../../vm" }

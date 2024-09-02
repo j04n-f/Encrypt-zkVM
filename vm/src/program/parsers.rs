@@ -8,7 +8,7 @@ pub fn parse_push(op: &[&str], step: usize) -> Result<OpCode, AssemblyError> {
         return Err(AssemblyError::extra_param(op, step));
     }
 
-    let value = match op[1].parse::<u128>() {
+    let value = match op[1].parse::<u8>() {
         Ok(i) => i,
         Err(_) => return Err(AssemblyError::invalid_param(op, step)),
     };
@@ -24,6 +24,14 @@ pub fn parse_read(op: &[&str], step: usize) -> Result<OpCode, AssemblyError> {
     Ok(OpCode::Read)
 }
 
+pub fn parse_read2(op: &[&str], step: usize) -> Result<OpCode, AssemblyError> {
+    if op.len() > 1 {
+        return Err(AssemblyError::extra_param(op, step));
+    }
+
+    Ok(OpCode::Read2)
+}
+
 pub fn parse_add(op: &[&str], step: usize) -> Result<OpCode, AssemblyError> {
     if op.len() > 1 {
         return Err(AssemblyError::extra_param(op, step));
@@ -31,9 +39,23 @@ pub fn parse_add(op: &[&str], step: usize) -> Result<OpCode, AssemblyError> {
     Ok(OpCode::Add)
 }
 
+pub fn parse_sadd(op: &[&str], step: usize) -> Result<OpCode, AssemblyError> {
+    if op.len() > 1 {
+        return Err(AssemblyError::extra_param(op, step));
+    }
+    Ok(OpCode::SAdd)
+}
+
 pub fn parse_mul(op: &[&str], step: usize) -> Result<OpCode, AssemblyError> {
     if op.len() > 1 {
         return Err(AssemblyError::extra_param(op, step));
     }
     Ok(OpCode::Mul)
+}
+
+pub fn parse_smul(op: &[&str], step: usize) -> Result<OpCode, AssemblyError> {
+    if op.len() > 1 {
+        return Err(AssemblyError::extra_param(op, step));
+    }
+    Ok(OpCode::SMul)
 }
