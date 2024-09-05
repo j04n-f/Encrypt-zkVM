@@ -1,4 +1,4 @@
-use std::{fs, io::Cursor};
+use std::{io::Cursor, path::Path};
 
 use vm::{Processor, Program, ProgramInputs};
 
@@ -37,20 +37,9 @@ fn main() -> Result<(), String> {
     let secret_inputs: [FheUInt8; 1] = bincode::deserialize_from(&mut inputs).unwrap();
     let server_key: ServerKey = bincode::deserialize_from(&mut inputs).unwrap();
 
-    let path = "lr.txt";
+    let path = Path::new("lr.txt");
 
-    let source = match fs::read_to_string(path) {
-        Ok(source) => source,
-        Err(err) => {
-            return Err(format!(
-                "could not open {}: {}",
-                path,
-                err.to_string().to_lowercase()
-            ))
-        }
-    };
-
-    let program = match Program::load(&source) {
+    let program = match Program::load(path) {
         Ok(program) => program,
         Err(err) => return Err(format!("{err}")),
     };

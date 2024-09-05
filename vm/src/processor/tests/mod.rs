@@ -8,7 +8,7 @@ mod stack;
 #[test]
 fn test_execute_program() {
     let source = "push.1 push.2 add read mul";
-    let program = Program::load(source).unwrap();
+    let program = Program::compile(source).unwrap();
     let processor = Processor::run(program, default_program_inputs()).unwrap();
 
     assert_eq!(processor.get_output()[0], 9);

@@ -1,7 +1,9 @@
+use std::{fs, path::Path};
+
 use crate::processor::OpCode;
 
 mod errors;
-use errors::AssemblyError;
+use errors::ProgramError;
 
 mod parsers;
 
@@ -16,13 +18,21 @@ pub struct Program {
 }
 
 impl Program {
-    pub fn load(source: &str) -> Result<Program, AssemblyError> {
+    pub fn load(path: &Path) -> Result<Program, ProgramError> {
+        let source = match fs::read_to_string(path) {
+            Ok(source) => source,
+            Err(err) => return Err(ProgramError::read_error(&err.to_string().to_lowercase())),
+        };
+        Program::compile(&source)
+    }
+
+    pub fn compile(source: &str) -> Result<Program, ProgramError> {
         let mut code: Vec<OpCode> = Vec::new();
 
         let tokens: Vec<&str> = source.split_whitespace().collect();
 
         if tokens.is_empty() {
-            return Err(AssemblyError::empty_program());
+            return Err(ProgramError::empty_program());
         }
 
         for (i, token) in tokens.iter().enumerate() {
@@ -39,7 +49,7 @@ impl Program {
     }
 }
 
-fn parse_op(step: usize, line: &str) -> Result<OpCode, AssemblyError> {
+fn parse_op(step: usize, line: &str) -> Result<OpCode, ProgramError> {
     let op: Vec<&str> = line.split('.').collect();
 
     #[rustfmt::skip]
@@ -51,7 +61,7 @@ fn parse_op(step: usize, line: &str) -> Result<OpCode, AssemblyError> {
         "sadd"  => parsers::parse_sadd(&op, step),
         "mul"   => parsers::parse_mul(&op, step),
         "smul"  => parsers::parse_smul(&op, step),
-        _       => Err(AssemblyError::invalid_op(&op, step)),
+        _       => Err(ProgramError::invalid_op(&op, step)),
     };
 }
 

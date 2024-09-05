@@ -3,7 +3,7 @@ use super::*;
 #[test]
 fn test_add() {
     let source = "push.1 push.2 add";
-    let program = Program::load(source).unwrap();
+    let program = Program::compile(source).unwrap();
     let processor = Processor::run(program, default_program_inputs()).unwrap();
 
     assert_eq!(vec![0, 0, 0, 0, 0], processor.stack.get_stack_state(0));
@@ -17,7 +17,7 @@ fn test_add() {
 #[test]
 fn test_mul() {
     let source = "push.1 push.2 mul";
-    let program = Program::load(source).unwrap();
+    let program = Program::compile(source).unwrap();
     let processor = Processor::run(program, default_program_inputs()).unwrap();
 
     assert_eq!(vec![0, 0, 0, 0, 0], processor.stack.get_stack_state(0));
@@ -31,7 +31,7 @@ fn test_mul() {
 #[test]
 fn test_read() {
     let source = "read";
-    let program = Program::load(source).unwrap();
+    let program = Program::compile(source).unwrap();
     let processor = Processor::run(program, default_program_inputs()).unwrap();
 
     assert_eq!(vec![0, 0, 0, 0, 0], processor.stack.get_stack_state(0));
@@ -43,7 +43,7 @@ fn test_read2() {
     let source = "read2";
     let inputs = default_program_inputs();
     let value = &inputs.get_secret()[0];
-    let program = Program::load(source).unwrap();
+    let program = Program::compile(source).unwrap();
     let processor = Processor::run(program, inputs).unwrap();
 
     assert_eq!(vec![0, 0, 0, 0, 0], processor.stack.get_stack_state(0));
@@ -53,7 +53,7 @@ fn test_read2() {
 #[test]
 fn test_push() {
     let source = "push.4";
-    let program = Program::load(source).unwrap();
+    let program = Program::compile(source).unwrap();
     let processor = Processor::run(program, default_program_inputs()).unwrap();
 
     assert_eq!(vec![0, 0, 0, 0, 0], processor.stack.get_stack_state(0));
@@ -67,7 +67,7 @@ fn test_sadd() {
     let value = &inputs.get_secret()[0];
     let scalar = &inputs.get_public()[0];
     let server_key = inputs.get_server_key();
-    let program = Program::load(source).unwrap();
+    let program = Program::compile(source).unwrap();
     let processor = Processor::run(program, inputs).unwrap();
 
     let result = server_key.scalar_add(scalar, value);
@@ -94,7 +94,7 @@ fn test_smul() {
     let value = &inputs.get_secret()[0];
     let scalar = &inputs.get_public()[0];
     let server_key = inputs.get_server_key();
-    let program = Program::load(source).unwrap();
+    let program = Program::compile(source).unwrap();
     let processor = Processor::run(program, inputs).unwrap();
 
     let result = server_key.scalar_mul(scalar, value);
@@ -117,7 +117,7 @@ fn test_smul() {
 #[test]
 fn test_add_stack_underflow() {
     let source = "push.1 add";
-    let program = Program::load(source).unwrap();
+    let program = Program::compile(source).unwrap();
     let error = Processor::run(program, default_program_inputs()).unwrap_err();
 
     assert_eq!(
@@ -129,7 +129,7 @@ fn test_add_stack_underflow() {
 #[test]
 fn test_sadd_stack_underflow() {
     let source = "read2 sadd";
-    let program = Program::load(source).unwrap();
+    let program = Program::compile(source).unwrap();
     let error = Processor::run(program, default_program_inputs()).unwrap_err();
 
     assert_eq!(
@@ -141,7 +141,7 @@ fn test_sadd_stack_underflow() {
 #[test]
 fn test_mul_stack_underflow() {
     let source = "push.1 mul";
-    let program = Program::load(source).unwrap();
+    let program = Program::compile(source).unwrap();
     let error = Processor::run(program, default_program_inputs()).unwrap_err();
 
     assert_eq!(
@@ -153,7 +153,7 @@ fn test_mul_stack_underflow() {
 #[test]
 fn test_smul_stack_underflow() {
     let source = "read2 smul";
-    let program = Program::load(source).unwrap();
+    let program = Program::compile(source).unwrap();
     let error = Processor::run(program, default_program_inputs()).unwrap_err();
 
     assert_eq!(
@@ -165,7 +165,7 @@ fn test_smul_stack_underflow() {
 #[test]
 fn test_read_empty_inputs() {
     let source = "read read read";
-    let program = Program::load(source).unwrap();
+    let program = Program::compile(source).unwrap();
     let error = Processor::run(program, default_program_inputs()).unwrap_err();
 
     assert_eq!(
@@ -177,7 +177,7 @@ fn test_read_empty_inputs() {
 #[test]
 fn test_read2_empty_inputs() {
     let source = "read2 read2";
-    let program = Program::load(source).unwrap();
+    let program = Program::compile(source).unwrap();
     let error = Processor::run(program, default_program_inputs()).unwrap_err();
 
     assert_eq!(
