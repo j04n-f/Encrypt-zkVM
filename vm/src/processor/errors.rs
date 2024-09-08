@@ -1,9 +1,13 @@
+use std::error::Error;
+
 use super::OpCode;
 
 pub struct StackError {
     message: String,
     step: usize,
 }
+
+impl Error for StackError {}
 
 impl StackError {
     pub fn stack_underflow(op: OpCode, step: usize) -> StackError {

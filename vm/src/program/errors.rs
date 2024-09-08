@@ -1,7 +1,11 @@
+use std::error::Error;
+
 pub struct ProgramError {
     message: String,
     step: usize,
 }
+
+impl Error for ProgramError {}
 
 impl ProgramError {
     pub fn read_error(message: &str) -> ProgramError {

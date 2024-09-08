@@ -8,7 +8,7 @@ use stack::Stack;
 
 mod errors;
 
-use errors::StackError;
+pub use errors::StackError;
 
 #[cfg(test)]
 mod tests;
@@ -34,8 +34,12 @@ impl Processor {
         Ok(processor)
     }
 
+    pub fn trace(self) -> Vec<Vec<u128>> {
+        self.stack.into_trace()
+    }
+
     pub fn get_output(&self) -> Vec<u128> {
-        self.stack.get_current_state()
+        self.stack.current_state()
     }
 
     fn execute_op(&mut self, op_code: OpCode) -> Result<(), StackError> {

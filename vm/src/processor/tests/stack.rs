@@ -1,15 +1,32 @@
 use super::*;
 
 #[test]
+fn test_clk_trace() {
+    let source = "push.1 push.2 push.3 add add";
+    let program = Program::compile(source).unwrap();
+    let processor = Processor::run(program, default_program_inputs()).unwrap();
+
+    let trace = processor.stack.into_trace();
+
+    for i in 0..8 {
+        assert_eq!(trace[0][i], i as u128);
+    }
+
+    for trace in trace.iter() {
+        assert_eq!(trace.len(), 8);
+    }
+}
+
+#[test]
 fn test_add() {
     let source = "push.1 push.2 add";
     let program = Program::compile(source).unwrap();
     let processor = Processor::run(program, default_program_inputs()).unwrap();
 
-    assert_eq!(vec![0, 0, 0, 0, 0], processor.stack.get_stack_state(0));
-    assert_eq!(vec![1, 0, 0, 0, 0], processor.stack.get_stack_state(1));
-    assert_eq!(vec![2, 1, 0, 0, 0], processor.stack.get_stack_state(2));
-    assert_eq!(vec![3, 0, 0, 0, 0], processor.stack.get_stack_state(3));
+    assert_eq!(vec![0, 0, 0, 0], processor.stack.stack_state(0));
+    assert_eq!(vec![1, 0, 0, 0], processor.stack.stack_state(1));
+    assert_eq!(vec![2, 1, 0, 0], processor.stack.stack_state(2));
+    assert_eq!(vec![3, 0, 0, 0], processor.stack.stack_state(3));
 
     assert_eq!(processor.get_output()[0], 3);
 }
@@ -20,10 +37,10 @@ fn test_mul() {
     let program = Program::compile(source).unwrap();
     let processor = Processor::run(program, default_program_inputs()).unwrap();
 
-    assert_eq!(vec![0, 0, 0, 0, 0], processor.stack.get_stack_state(0));
-    assert_eq!(vec![1, 0, 0, 0, 0], processor.stack.get_stack_state(1));
-    assert_eq!(vec![2, 1, 0, 0, 0], processor.stack.get_stack_state(2));
-    assert_eq!(vec![2, 0, 0, 0, 0], processor.stack.get_stack_state(3));
+    assert_eq!(vec![0, 0, 0, 0], processor.stack.stack_state(0));
+    assert_eq!(vec![1, 0, 0, 0], processor.stack.stack_state(1));
+    assert_eq!(vec![2, 1, 0, 0], processor.stack.stack_state(2));
+    assert_eq!(vec![2, 0, 0, 0], processor.stack.stack_state(3));
 
     assert_eq!(processor.get_output()[0], 2);
 }
@@ -34,8 +51,8 @@ fn test_read() {
     let program = Program::compile(source).unwrap();
     let processor = Processor::run(program, default_program_inputs()).unwrap();
 
-    assert_eq!(vec![0, 0, 0, 0, 0], processor.stack.get_stack_state(0));
-    assert_eq!(vec![3, 0, 0, 0, 0], processor.stack.get_stack_state(1));
+    assert_eq!(vec![0, 0, 0, 0], processor.stack.stack_state(0));
+    assert_eq!(vec![3, 0, 0, 0], processor.stack.stack_state(1));
 }
 
 #[test]
@@ -46,8 +63,8 @@ fn test_read2() {
     let program = Program::compile(source).unwrap();
     let processor = Processor::run(program, inputs).unwrap();
 
-    assert_eq!(vec![0, 0, 0, 0, 0], processor.stack.get_stack_state(0));
-    assert_eq!(value.ciphertext(), processor.stack.get_stack_state(1));
+    assert_eq!(vec![0, 0, 0, 0, 0], processor.stack.stack_state(0));
+    assert_eq!(value.ciphertext(), processor.stack.stack_state(1));
 }
 
 #[test]
@@ -56,8 +73,8 @@ fn test_push() {
     let program = Program::compile(source).unwrap();
     let processor = Processor::run(program, default_program_inputs()).unwrap();
 
-    assert_eq!(vec![0, 0, 0, 0, 0], processor.stack.get_stack_state(0));
-    assert_eq!(vec![4, 0, 0, 0, 0], processor.stack.get_stack_state(1));
+    assert_eq!(vec![0, 0, 0, 0], processor.stack.stack_state(0));
+    assert_eq!(vec![4, 0, 0, 0], processor.stack.stack_state(1));
 }
 
 #[test]
@@ -81,10 +98,10 @@ fn test_sadd() {
     let mut register3 = result.ciphertext();
     register3.push(0);
 
-    assert_eq!(vec![0, 0, 0, 0, 0, 0], processor.stack.get_stack_state(0));
-    assert_eq!(register1, processor.stack.get_stack_state(1));
-    assert_eq!(register2, processor.stack.get_stack_state(2));
-    assert_eq!(register3, processor.stack.get_stack_state(3));
+    assert_eq!(vec![0, 0, 0, 0, 0, 0], processor.stack.stack_state(0));
+    assert_eq!(register1, processor.stack.stack_state(1));
+    assert_eq!(register2, processor.stack.stack_state(2));
+    assert_eq!(register3, processor.stack.stack_state(3));
 }
 
 #[test]
@@ -108,10 +125,10 @@ fn test_smul() {
     let mut register3 = result.ciphertext();
     register3.push(0);
 
-    assert_eq!(vec![0, 0, 0, 0, 0, 0], processor.stack.get_stack_state(0));
-    assert_eq!(register1, processor.stack.get_stack_state(1));
-    assert_eq!(register2, processor.stack.get_stack_state(2));
-    assert_eq!(register3, processor.stack.get_stack_state(3));
+    assert_eq!(vec![0, 0, 0, 0, 0, 0], processor.stack.stack_state(0));
+    assert_eq!(register1, processor.stack.stack_state(1));
+    assert_eq!(register2, processor.stack.stack_state(2));
+    assert_eq!(register3, processor.stack.stack_state(3));
 }
 
 #[test]

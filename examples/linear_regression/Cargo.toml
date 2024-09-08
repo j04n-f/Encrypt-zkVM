@@ -5,5 +5,7 @@ edition = "2021"
 
 [dependencies]
 bincode = { workspace = true }
+winterfell = { workspace = true }
 fhe = { path = "../../fhe" }
 vm = { path = "../../vm" }
+air = { path = "../../air" }

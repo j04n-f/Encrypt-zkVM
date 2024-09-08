@@ -6,7 +6,8 @@ edition = "2021"
 [dependencies]
 bincode = { workspace = true }
 fhe = { path = "../fhe" }
-winterfell = { version = "0.9.0" }
+winterfell = { workspace = true }
+prover = { path = "../prover"}
 
 [dev-dependencies]
 tempfile = { version = "3.12.0" }

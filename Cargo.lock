@@ -3,6 +3,13 @@
 version = 3
 
 [[package]]
+name = "air"
+version = "0.1.0"
+dependencies = [
+ "winterfell",
+]
+
+[[package]]
 name = "arrayref"
 version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -184,9 +191,11 @@ checksum = "4ec2a862134d2a7d32d7983ddcdd1c4923530833c9f2ea1a44fc5fa473989058"
 name = "linear_regression"
 version = "0.1.0"
 dependencies = [
+ "air",
  "bincode",
  "fhe",
  "vm",
+ "winterfell",
 ]
 
 [[package]]
@@ -233,6 +242,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5e719e8df665df0d1c8fbfd238015744736151d4445ec0836b8e628aae103b77"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "prover"
+version = "0.1.0"
+dependencies = [
+ "air",
+ "winterfell",
 ]
 
 [[package]]
@@ -409,6 +426,7 @@ version = "0.1.0"
 dependencies = [
  "bincode",
  "fhe",
+ "prover",
  "tempfile",
  "winterfell",
 ]
