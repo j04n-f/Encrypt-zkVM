@@ -4,6 +4,8 @@ use rand::Rng;
 use rand_distr::{Distribution, Normal};
 use serde::{Deserialize, Serialize};
 
+use super::{Export, Import};
+
 use super::FheUInt8;
 use super::LweParameters;
 
@@ -122,7 +124,15 @@ impl ServerKey {
                 .collect::<Vec<u128>>(),
         )
     }
+
+    pub fn key(&self) -> Vec<u32> {
+        self.key.clone()
+    }
 }
+
+impl Export for ServerKey {}
+
+impl Import for ServerKey {}
 
 impl std::fmt::Debug for ServerKey {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {

@@ -2,8 +2,8 @@ use winterfell::{
     crypto::{hashers::Blake3_256, DefaultRandomCoin},
     math::{fields::f128::BaseElement, FieldElement},
     matrix::ColMatrix,
-    AuxRandElements, DefaultConstraintEvaluator, DefaultTraceLde,
-    ProofOptions, Prover, StarkDomain, TraceInfo, TracePolyTable, TraceTable,
+    AuxRandElements, DefaultConstraintEvaluator, DefaultTraceLde, ProofOptions, Prover,
+    StarkDomain, TraceInfo, TracePolyTable, TraceTable,
 };
 
 use air::{ProcessAir, PublicInputs};
@@ -33,7 +33,7 @@ impl Prover for ExecutionProver {
     type ConstraintEvaluator<'a, E: FieldElement<BaseField = BaseElement>> =
         DefaultConstraintEvaluator<'a, ProcessAir, E>;
 
-    fn get_pub_inputs(&self, trace: &Self::Trace) -> PublicInputs {
+    fn get_pub_inputs(&self, _trace: &Self::Trace) -> PublicInputs {
         PublicInputs::new()
     }
 

@@ -34,7 +34,7 @@ impl Air for ProcessAir {
     type GkrProof = ();
     type GkrVerifier = ();
 
-    fn new(trace_info: TraceInfo, pub_inputs: PublicInputs, options: ProofOptions) -> Self {
+    fn new(trace_info: TraceInfo, _pub_inputs: PublicInputs, options: ProofOptions) -> Self {
         // 0 = clk' - (clk + 1) || degree 1
         let degrees = vec![TransitionConstraintDegree::new(1)];
 
