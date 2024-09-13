@@ -5,6 +5,12 @@ use super::*;
 #[cfg(test)]
 mod stack;
 
+#[cfg(test)]
+mod decoder;
+
+#[cfg(test)]
+mod system;
+
 #[test]
 fn test_execute_program() {
     let source = "push.1 push.2 add read mul";

@@ -1,6 +1,6 @@
 use std::{fs, path::Path};
 
-use crate::processor::OpCode;
+use crate::processor::{OpCode, OpValue, Operation};
 
 mod errors;
 use errors::ProgramError;
@@ -14,7 +14,7 @@ pub use inputs::ProgramInputs;
 mod tests;
 
 pub struct Program {
-    code: Vec<OpCode>,
+    code: Vec<Operation>,
 }
 
 impl Program {
@@ -27,7 +27,7 @@ impl Program {
     }
 
     pub fn compile(source: &str) -> Result<Program, ProgramError> {
-        let mut code: Vec<OpCode> = Vec::new();
+        let mut code: Vec<Operation> = Vec::new();
 
         let tokens: Vec<&str> = source.split_whitespace().collect();
 
@@ -44,12 +44,12 @@ impl Program {
         Ok(Program { code })
     }
 
-    pub fn get_code(&self) -> &[OpCode] {
-        &self.code
+    pub fn get_code(&self) -> Vec<Operation> {
+        self.code.clone()
     }
 }
 
-fn parse_op(step: usize, line: &str) -> Result<OpCode, ProgramError> {
+fn parse_op(step: usize, line: &str) -> Result<Operation, ProgramError> {
     let op: Vec<&str> = line.split('.').collect();
 
     #[rustfmt::skip]
@@ -67,10 +67,10 @@ fn parse_op(step: usize, line: &str) -> Result<OpCode, ProgramError> {
 
 impl std::fmt::Display for Program {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.code[0])?;
+        write!(f, "{}{}", self.code[0].0, self.code[0].1)?;
 
         for i in 1..self.code.len() {
-            write!(f, " {}", self.code[i])?;
+            write!(f, " {}{}", self.code[i].0, self.code[i].1)?;
         }
 
         Ok(())
@@ -79,10 +79,10 @@ impl std::fmt::Display for Program {
 
 impl std::fmt::Debug for Program {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.code[0])?;
+        write!(f, "{}{}", self.code[0].0, self.code[0].1)?;
 
         for i in 1..self.code.len() {
-            write!(f, " {}", self.code[i])?;
+            write!(f, " {}{}", self.code[i].0, self.code[i].1)?;
         }
 
         Ok(())

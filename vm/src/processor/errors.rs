@@ -1,7 +1,5 @@
 use std::error::Error;
 
-use super::OpCode;
-
 pub struct StackError {
     message: String,
     step: usize,
@@ -10,7 +8,7 @@ pub struct StackError {
 impl Error for StackError {}
 
 impl StackError {
-    pub fn stack_underflow(op: OpCode, step: usize) -> StackError {
+    pub fn stack_underflow(op: &str, step: usize) -> StackError {
         StackError {
             message: format!("{op} operation stack underflow"),
             step,

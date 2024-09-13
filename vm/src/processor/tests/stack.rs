@@ -1,35 +1,6 @@
 use super::*;
 
-#[test]
-fn test_clk_trace() {
-    let source = "push.1 push.2 push.3 add add";
-    let program = Program::compile(source).unwrap();
-    let processor = Processor::run(program, default_program_inputs()).unwrap();
-
-    let trace = processor.stack.into_trace();
-
-    for i in 0..8 {
-        assert_eq!(trace[0][i], i as u128);
-    }
-
-    for trace in trace.iter() {
-        assert_eq!(trace.len(), 8);
-    }
-}
-
-#[test]
-fn test_add() {
-    let source = "push.1 push.2 add";
-    let program = Program::compile(source).unwrap();
-    let processor = Processor::run(program, default_program_inputs()).unwrap();
-
-    assert_eq!(vec![0, 0, 0, 0], processor.stack.stack_state(0));
-    assert_eq!(vec![1, 0, 0, 0], processor.stack.stack_state(1));
-    assert_eq!(vec![2, 1, 0, 0], processor.stack.stack_state(2));
-    assert_eq!(vec![3, 0, 0, 0], processor.stack.stack_state(3));
-
-    assert_eq!(processor.get_output()[0], 3);
-}
+// TODO: Into Trace Test
 
 #[test]
 fn test_mul() {
@@ -139,7 +110,7 @@ fn test_add_stack_underflow() {
 
     assert_eq!(
         format!("{error}"),
-        format!("{}", StackError::stack_underflow(OpCode::Add, 2))
+        format!("{}", StackError::stack_underflow("add", 2))
     );
 }
 
@@ -151,7 +122,7 @@ fn test_sadd_stack_underflow() {
 
     assert_eq!(
         format!("{error}"),
-        format!("{}", StackError::stack_underflow(OpCode::SAdd, 2))
+        format!("{}", StackError::stack_underflow("sadd", 2))
     );
 }
 
@@ -163,7 +134,7 @@ fn test_mul_stack_underflow() {
 
     assert_eq!(
         format!("{error}"),
-        format!("{}", StackError::stack_underflow(OpCode::Mul, 2))
+        format!("{}", StackError::stack_underflow("mul", 2))
     );
 }
 
@@ -175,7 +146,7 @@ fn test_smul_stack_underflow() {
 
     assert_eq!(
         format!("{error}"),
-        format!("{}", StackError::stack_underflow(OpCode::SAdd, 2))
+        format!("{}", StackError::stack_underflow("smul", 2))
     );
 }
 

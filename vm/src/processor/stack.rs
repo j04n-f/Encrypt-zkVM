@@ -1,33 +1,26 @@
-use super::OpCode;
 use super::ProgramInputs;
 use super::StackError;
+use super::{OpCode, OpValue, Operation};
 
 use fhe::{FheUInt8, ServerKey};
 
 const MIN_STACK_DEPTH: usize = 4;
 
-// Winterfell Constrains
-// TraceLength > 7
-// TraceLength % 2 = 0
-const MIN_TRACE_LENGTH: usize = 8;
-
 pub struct Stack {
+    clk: usize,
     registers: Vec<Vec<u128>>,
-    clk_trace: Vec<u128>,
     tape_a: Vec<u8>,
     tape_b: Vec<FheUInt8>,
     max_depth: usize,
     depth: usize,
-    clk: usize,
     server_key: ServerKey,
 }
 
 impl Stack {
-    pub fn new(inputs: &ProgramInputs) -> Stack {
+    pub fn new(inputs: &ProgramInputs, init_trace_length: usize) -> Stack {
         let registers: Vec<Vec<u128>> = (0..MIN_STACK_DEPTH)
-            .map(|_| vec![0; MIN_TRACE_LENGTH])
+            .map(|_| vec![0; init_trace_length])
             .collect();
-        let clk_trace: Vec<u128> = (0..MIN_TRACE_LENGTH as u128).collect();
 
         // reverse inputs to pop them in order
         let mut tape_a = inputs.get_public();
@@ -37,7 +30,6 @@ impl Stack {
 
         Stack {
             registers,
-            clk_trace,
             tape_a,
             tape_b,
             max_depth: 0,
@@ -47,20 +39,20 @@ impl Stack {
         }
     }
 
-    pub fn execute(&mut self, op_code: OpCode) -> Result<(), StackError> {
+    pub fn execute_op(&mut self, op: &Operation) -> Result<(), StackError> {
         self.advance_clock();
         self.ensure_trace_capacity();
 
         #[rustfmt::skip]
-        return match op_code {
-            OpCode::Push(value) => self.op_push(value),
+        return match op.0 {
+            OpCode::Push              => self.op_push(op.1),
             OpCode::Read              => self.op_read(),
             OpCode::Read2             => self.op_read2(),
 
-            OpCode::Add               => self.op_add(op_code),
-            OpCode::SAdd              => self.op_sadd(op_code),
-            OpCode::Mul               => self.op_mul(op_code),
-            OpCode::SMul              => self.op_smul(op_code),
+            OpCode::Add               => self.op_add(),
+            OpCode::SAdd              => self.op_sadd(),
+            OpCode::Mul               => self.op_mul(),
+            OpCode::SMul              => self.op_smul(),
         };
     }
 
@@ -95,26 +87,12 @@ impl Stack {
 
         self.registers.truncate(self.max_depth);
 
-        // fill clock trace with incremental clk values
-        self.clk_trace.resize(trace_length, 0);
-
-        for (i, clk) in self.clk_trace.iter_mut().enumerate().skip(self.clk) {
-            *clk = i as u128;
-        }
-
-        self.clk = self.trace_length() - 1;
-
-        let mut trace: Vec<Vec<u128>> = Vec::new();
-
-        trace.push(self.clk_trace);
-        trace.extend(self.registers);
-
-        trace
+        self.registers
     }
 
-    fn op_push(&mut self, value: u8) -> Result<(), StackError> {
+    fn op_push(&mut self, op_value: OpValue) -> Result<(), StackError> {
         self.shift_right(0, 1);
-        self.registers[0][self.clk] = value as u128;
+        self.registers[0][self.clk] = op_value.value() as u128;
         Ok(())
     }
 
@@ -142,20 +120,24 @@ impl Stack {
         Ok(())
     }
 
-    fn op_add(&mut self, op_code: OpCode) -> Result<(), StackError> {
+    fn op_add(&mut self) -> Result<(), StackError> {
+        let op = "add";
+
         if self.depth < 2 {
-            return Err(StackError::stack_underflow(op_code, self.clk));
+            return Err(StackError::stack_underflow(op, self.clk));
         }
 
         let x = self.registers[0][self.clk - 1];
         let y = self.registers[1][self.clk - 1];
         self.registers[0][self.clk] = x.wrapping_add(y);
-        self.shift_left(op_code, 2, 1)
+        self.shift_left(op, 2, 1)
     }
 
-    fn op_sadd(&mut self, op_code: OpCode) -> Result<(), StackError> {
+    fn op_sadd(&mut self) -> Result<(), StackError> {
+        let op = "sadd";
+
         if self.depth < self.server_key.lwe_size() + 1 {
-            return Err(StackError::stack_underflow(op_code, self.clk));
+            return Err(StackError::stack_underflow(op, self.clk));
         }
 
         let ct: Vec<u128> = (1..=self.server_key.lwe_size())
@@ -169,22 +151,26 @@ impl Stack {
             self.registers[i][self.clk] = *value;
         }
 
-        self.shift_left(op_code, 6, 1)
+        self.shift_left(op, 6, 1)
     }
 
-    fn op_mul(&mut self, op_code: OpCode) -> Result<(), StackError> {
+    fn op_mul(&mut self) -> Result<(), StackError> {
+        let op: &str = "mul";
+
         if self.depth < 2 {
-            return Err(StackError::stack_underflow(op_code, self.clk));
+            return Err(StackError::stack_underflow(op, self.clk));
         }
         let x = self.registers[0][self.clk - 1];
         let y = self.registers[1][self.clk - 1];
         self.registers[0][self.clk] = x.wrapping_mul(y);
-        self.shift_left(op_code, 2, 1)
+        self.shift_left(op, 2, 1)
     }
 
-    fn op_smul(&mut self, op_code: OpCode) -> Result<(), StackError> {
+    fn op_smul(&mut self) -> Result<(), StackError> {
+        let op = "smul";
+
         if self.depth < self.server_key.lwe_size() + 1 {
-            return Err(StackError::stack_underflow(op_code, self.clk));
+            return Err(StackError::stack_underflow(op, self.clk));
         }
 
         let ct: Vec<u128> = (1..=self.server_key.lwe_size())
@@ -198,17 +184,12 @@ impl Stack {
             self.registers[i][self.clk] = *value;
         }
 
-        self.shift_left(op_code, 6, 1)
+        self.shift_left(op, 6, 1)
     }
 
-    fn shift_left(
-        &mut self,
-        op_code: OpCode,
-        start: usize,
-        pos_count: usize,
-    ) -> Result<(), StackError> {
+    fn shift_left(&mut self, op: &str, start: usize, pos_count: usize) -> Result<(), StackError> {
         if self.depth < pos_count {
-            return Err(StackError::stack_underflow(op_code, self.clk));
+            return Err(StackError::stack_underflow(op, self.clk));
         }
 
         // shift all values by pos_count to the left
@@ -261,13 +242,11 @@ impl Stack {
             for register in self.registers.iter_mut() {
                 register.resize(new_length, 0);
             }
-            self.clk_trace.resize(new_length, 0);
         }
     }
 
     // Increment clock by 1
     fn advance_clock(&mut self) {
         self.clk += 1;
-        self.clk_trace[self.clk] = self.clk as u128;
     }
 }
