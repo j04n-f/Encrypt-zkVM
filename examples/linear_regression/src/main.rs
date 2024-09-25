@@ -10,7 +10,7 @@ use winterfell::{
     verify, AcceptableOptions, Proof,
 };
 
-use air::{ProcessAir, PublicInputs};
+use air::{ProcessorAir, PublicInputs};
 
 type Blake3 = Blake3_256<BaseElement>;
 
@@ -56,10 +56,8 @@ fn main() {
 
         let (output, proof) = vm::prove(program, inputs).unwrap();
 
-        let result = FheUInt8::new(&output);
-
         let mut serialized_outputs = Vec::new();
-        bincode::serialize_into(&mut serialized_outputs, &result).unwrap();
+        bincode::serialize_into(&mut serialized_outputs, &output).unwrap();
         bincode::serialize_into(&mut serialized_outputs, &proof.to_bytes()).unwrap();
 
         serialized_outputs
@@ -67,8 +65,10 @@ fn main() {
 
     // Client
     let mut outputs = Cursor::new(serialized_outputs);
-    let result: FheUInt8 = bincode::deserialize_from(&mut outputs).unwrap();
+    let output: Vec<u128> = bincode::deserialize_from(&mut outputs).unwrap();
     let proof: Vec<u8> = bincode::deserialize_from(&mut outputs).unwrap();
+
+    let result = FheUInt8::new(&output);
 
     let _clear_result = client_key.decrypt(&result);
 
@@ -76,9 +76,14 @@ fn main() {
 
     let min_opts = AcceptableOptions::MinConjecturedSecurity(95);
 
-    verify::<ProcessAir, Blake3, DefaultRandomCoin<Blake3>>(
+    verify::<ProcessorAir, Blake3, DefaultRandomCoin<Blake3>>(
         Proof::from_bytes(&proof).unwrap(),
-        PublicInputs::new(),
+        PublicInputs::new(
+            output
+                .iter()
+                .map(|value| BaseElement::try_from(*value).unwrap())
+                .collect::<Vec<BaseElement>>(),
+        ),
         &min_opts,
     )
     .unwrap()

@@ -25,6 +25,7 @@ mod tests;
 // TraceLength > 7
 // TraceLength % 2 = 0
 const MIN_TRACE_LENGTH: usize = 8;
+const MAX_STACK_DEPTH: usize = 8;
 
 pub struct Processor {
     stack: Stack,
@@ -62,13 +63,13 @@ impl Processor {
 
         for column in &mut trace {
             let last = column.last_mut().unwrap();
-            *last = rng.gen();
+            *last = rng.gen_range(1..=u128::MAX);
         }
 
         trace
     }
 
-    pub fn get_output(&self) -> Vec<u128> {
+    pub fn get_stack_output(&self) -> Vec<u128> {
         self.stack.current_state()
     }
 
@@ -82,6 +83,6 @@ impl Processor {
 
 impl std::fmt::Debug for Processor {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "output is {:?}", self.get_output())
+        write!(f, "output is {:?}", self.get_stack_output())
     }
 }

@@ -25,7 +25,7 @@ fn test_mul() {
     assert_eq!(vec![2, 1, 0, 0, 0, 0, 0, 0], processor.stack.stack_state(2));
     assert_eq!(vec![2, 0, 0, 0, 0, 0, 0, 0], processor.stack.stack_state(3));
 
-    assert_eq!(processor.get_output()[0], 2);
+    assert_eq!(processor.get_stack_output()[0], 2);
 }
 
 #[test]
@@ -185,5 +185,22 @@ fn test_read2_empty_inputs() {
     assert_eq!(
         format!("{error}"),
         format!("{}", StackError::empty_inputs(2))
+    );
+}
+
+#[test]
+fn test_stack_overflow() {
+    let source = "push.1 push.1 push.1 push.1 push.1 push.1 push.1 push.1";
+    let program = Program::compile(source).unwrap();
+
+    Processor::run(program, default_program_inputs()).unwrap();
+
+    let source = "push.1 push.1 push.1 push.1 push.1 push.1 push.1 push.1 push.1";
+    let program = Program::compile(source).unwrap();
+    let error = Processor::run(program, default_program_inputs()).unwrap_err();
+
+    assert_eq!(
+        format!("{error}"),
+        format!("{}", StackError::stack_overflow("push", 9))
     );
 }

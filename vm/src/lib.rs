@@ -13,7 +13,7 @@ use processor::{Processor, StackError};
 pub fn prove(program: Program, inputs: ProgramInputs) -> Result<(Vec<u128>, Proof), StackError> {
     let processor = Processor::run(program, inputs)?;
 
-    let output = processor.get_output()[..5].to_vec();
+    let stack_output = processor.get_stack_output();
 
     let trace = TraceTable::init(
         processor
@@ -30,9 +30,15 @@ pub fn prove(program: Program, inputs: ProgramInputs) -> Result<(Vec<u128>, Proo
 
     let options = ProofOptions::new(32, 8, 0, FieldExtension::None, 8, 127);
 
-    let prover = ExecutionProver::new(options);
+    let prover = ExecutionProver::new(
+        options,
+        stack_output
+            .iter()
+            .map(|value| BaseElement::try_from(*value).unwrap())
+            .collect::<Vec<BaseElement>>(),
+    );
 
     let proof = prover.prove(trace).unwrap();
 
-    Ok((output, proof))
+    Ok((stack_output, proof))
 }

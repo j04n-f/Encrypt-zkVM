@@ -15,6 +15,13 @@ impl StackError {
         }
     }
 
+    pub fn stack_overflow(op: &str, step: usize) -> StackError {
+        StackError {
+            message: format!("{op} operation stack overflow"),
+            step,
+        }
+    }
+
     pub fn empty_inputs(step: usize) -> StackError {
         StackError {
             message: "no more inputs to read".to_string(),

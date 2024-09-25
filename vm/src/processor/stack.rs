@@ -4,7 +4,7 @@ use super::{OpCode, OpValue, Operation};
 
 use fhe::{FheUInt8, ServerKey};
 
-const MIN_STACK_DEPTH: usize = 8;
+use super::MAX_STACK_DEPTH;
 
 pub struct Stack {
     clk: usize,
@@ -12,14 +12,13 @@ pub struct Stack {
     helpers: Vec<Vec<u128>>,
     tape_a: Vec<u8>,
     tape_b: Vec<FheUInt8>,
-    max_depth: usize,
     depth: usize,
     server_key: ServerKey,
 }
 
 impl Stack {
     pub fn new(inputs: &ProgramInputs, init_trace_length: usize) -> Stack {
-        let registers: Vec<Vec<u128>> = (0..MIN_STACK_DEPTH)
+        let registers: Vec<Vec<u128>> = (0..MAX_STACK_DEPTH)
             .map(|_| vec![0; init_trace_length])
             .collect();
 
@@ -37,7 +36,6 @@ impl Stack {
             helpers,
             tape_a,
             tape_b,
-            max_depth: 0,
             depth: 0,
             server_key: inputs.get_server_key(),
         }
@@ -116,13 +114,13 @@ impl Stack {
     }
 
     fn op_push(&mut self, op_value: OpValue) -> Result<(), StackError> {
-        self.shift_right(0, 1);
+        self.shift_right("push", 0, 1)?;
         self.registers[0][self.clk] = op_value.value() as u128;
         Ok(())
     }
 
     fn op_read(&mut self) -> Result<(), StackError> {
-        self.shift_right(0, 1);
+        self.shift_right("read", 0, 1)?;
         let value = match self.tape_a.pop() {
             Some(value) => value,
             None => return Err(StackError::empty_inputs(self.clk)),
@@ -136,9 +134,7 @@ impl Stack {
             Some(value) => value.ciphertext(),
             None => return Err(StackError::empty_inputs(self.clk)),
         };
-
-        self.shift_right(0, ct.len());
-
+        self.shift_right("read2", 0, ct.len())?;
         for (i, value) in ct.iter().enumerate() {
             self.registers[i][self.clk] = *value;
         }
@@ -234,29 +230,21 @@ impl Stack {
         Ok(())
     }
 
-    fn shift_right(&mut self, start: usize, pos_count: usize) {
+    fn shift_right(&mut self, op: &str, start: usize, pos_count: usize) -> Result<(), StackError> {
         // stack depth has been increased by pos_count
         self.depth += pos_count;
 
         // allocate new registers to the stack and increase the stack mac depth
-        if self.depth > self.max_depth {
-            self.max_depth += pos_count;
-            if self.max_depth > self.registers.len() {
-                self.add_registers(self.max_depth - self.registers.len());
-            }
+        if self.depth > MAX_STACK_DEPTH {
+            return Err(StackError::stack_overflow(op, self.clk));
         }
 
         // set all "shifted-in" slots to clk' - 1
         for i in start..(self.depth - pos_count) {
             self.registers[i + pos_count][self.clk] = self.registers[i][self.clk - 1];
         }
-    }
 
-    /// Extends the stack by the specified number of registers.
-    fn add_registers(&mut self, num_registers: usize) {
-        for _ in 0..num_registers {
-            self.registers.push(vec![0; self.trace_length()]);
-        }
+        Ok(())
     }
 
     // Ensure there is enough memory allocated for the trace to accommodate a new row.

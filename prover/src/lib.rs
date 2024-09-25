@@ -6,7 +6,7 @@ use winterfell::{
     StarkDomain, TraceInfo, TracePolyTable, TraceTable,
 };
 
-use air::{ProcessAir, PublicInputs};
+use air::{ProcessorAir, PublicInputs};
 
 // We'll use BLAKE3 as the hash function during proof generation.
 type Blake3 = Blake3_256<BaseElement>;
@@ -15,26 +15,30 @@ type Blake3 = Blake3_256<BaseElement>;
 // struct.
 pub struct ExecutionProver {
     options: ProofOptions,
+    stack_outputs: Vec<BaseElement>,
 }
 
 impl ExecutionProver {
-    pub fn new(options: ProofOptions) -> Self {
-        Self { options }
+    pub fn new(options: ProofOptions, stack_outputs: Vec<BaseElement>) -> Self {
+        Self {
+            options,
+            stack_outputs,
+        }
     }
 }
 
 impl Prover for ExecutionProver {
     type BaseField = BaseElement;
-    type Air = ProcessAir;
+    type Air = ProcessorAir;
     type Trace = TraceTable<BaseElement>;
     type HashFn = Blake3;
     type RandomCoin = DefaultRandomCoin<Blake3>;
     type TraceLde<E: FieldElement<BaseField = BaseElement>> = DefaultTraceLde<E, Blake3>;
     type ConstraintEvaluator<'a, E: FieldElement<BaseField = BaseElement>> =
-        DefaultConstraintEvaluator<'a, ProcessAir, E>;
+        DefaultConstraintEvaluator<'a, ProcessorAir, E>;
 
     fn get_pub_inputs(&self, _trace: &Self::Trace) -> PublicInputs {
-        PublicInputs::new()
+        PublicInputs::new(self.stack_outputs.clone())
     }
 
     // We'll use the default trace low-degree extension.
@@ -50,7 +54,7 @@ impl Prover for ExecutionProver {
     // We'll use the default constraint evaluator to evaluate AIR constraints.
     fn new_evaluator<'a, E: FieldElement<BaseField = BaseElement>>(
         &self,
-        air: &'a ProcessAir,
+        air: &'a ProcessorAir,
         aux_rand_elements: Option<AuxRandElements<E>>,
         composition_coefficients: winterfell::ConstraintCompositionCoefficients<E>,
     ) -> Self::ConstraintEvaluator<'a, E> {

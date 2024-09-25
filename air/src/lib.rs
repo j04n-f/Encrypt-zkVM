@@ -4,37 +4,41 @@ use winterfell::{
     TransitionConstraintDegree,
 };
 
-pub struct PublicInputs();
-
-impl Default for PublicInputs {
-    fn default() -> Self {
-        Self::new()
-    }
+pub struct PublicInputs {
+    stack_outputs: Vec<BaseElement>,
 }
 
 impl PublicInputs {
-    pub fn new() -> PublicInputs {
-        PublicInputs {}
+    pub fn new(stack_outputs: Vec<BaseElement>) -> PublicInputs {
+        PublicInputs { stack_outputs }
     }
 }
 
 impl ToElements<BaseElement> for PublicInputs {
     fn to_elements(&self) -> Vec<BaseElement> {
-        vec![]
+        self.stack_outputs.clone()
     }
 }
 
-pub struct ProcessAir {
+pub struct ProcessorAir {
     context: AirContext<BaseElement>,
+    stack_outputs: Vec<BaseElement>,
 }
 
-impl Air for ProcessAir {
+impl ProcessorAir {
+    /// Returns last step of the execution trace.
+    pub fn last_step(&self) -> usize {
+        self.trace_length() - self.context().num_transition_exemptions()
+    }
+}
+
+impl Air for ProcessorAir {
     type BaseField = BaseElement;
     type PublicInputs = PublicInputs;
     type GkrProof = ();
     type GkrVerifier = ();
 
-    fn new(trace_info: TraceInfo, _pub_inputs: PublicInputs, options: ProofOptions) -> Self {
+    fn new(trace_info: TraceInfo, pub_inputs: PublicInputs, options: ProofOptions) -> Self {
         let degrees = vec![
             TransitionConstraintDegree::new(1),
             TransitionConstraintDegree::new(2),
@@ -46,9 +50,10 @@ impl Air for ProcessAir {
             TransitionConstraintDegree::new(2),
         ];
 
-        ProcessAir {
-            context: AirContext::new(trace_info, degrees, 1, options)
+        ProcessorAir {
+            context: AirContext::new(trace_info, degrees, 18, options)
                 .set_num_transition_exemptions(2),
+            stack_outputs: pub_inputs.stack_outputs,
         }
     }
 
@@ -100,8 +105,23 @@ impl Air for ProcessAir {
     }
 
     fn get_assertions(&self) -> Vec<Assertion<Self::BaseField>> {
+        let mut assertions = Vec::with_capacity(2);
         // clk[0] = 0
-        vec![Assertion::single(0, 0, Self::BaseField::ZERO)]
+        assertions.push(Assertion::single(0, 0, Self::BaseField::ZERO));
+
+        // depth[0] = 0
+        assertions.push(Assertion::single(4, 0, Self::BaseField::ZERO));
+
+        let last_step = self.last_step();
+
+        // Initial Stack == 0
+        // Final Stack == Stack Output
+        for i in 0..8 {
+            assertions.push(Assertion::single(i + 5, 0, Self::BaseField::ZERO));
+            assertions.push(Assertion::single(i + 5, last_step, self.stack_outputs[i]));
+        }
+
+        assertions
     }
 
     fn context(&self) -> &AirContext<Self::BaseField> {
