@@ -2,16 +2,12 @@ use super::{OpCode, Operation};
 
 pub struct Decoder {
     clk: usize,
-    op_bits_registers: [Vec<u128>; 7],
+    op_bits_registers: [Vec<u128>; 3],
 }
 
 impl Decoder {
     pub fn new(init_trace_length: usize) -> Decoder {
         let op_bits_registers = [
-            vec![0; init_trace_length],
-            vec![0; init_trace_length],
-            vec![0; init_trace_length],
-            vec![0; init_trace_length],
             vec![0; init_trace_length],
             vec![0; init_trace_length],
             vec![0; init_trace_length],
@@ -46,14 +42,10 @@ impl Decoder {
 
         let mut registers: Vec<Vec<u128>> = Vec::new();
 
-        let [r0, r1, r2, r3, r4, r5, r6] = self.op_bits_registers;
+        let [r0, r1, r2] = self.op_bits_registers;
         registers.push(r0);
         registers.push(r1);
         registers.push(r2);
-        registers.push(r3);
-        registers.push(r4);
-        registers.push(r5);
-        registers.push(r6);
 
         registers
     }
@@ -83,7 +75,7 @@ impl Decoder {
 
         let op_code = op_code as u8;
 
-        for i in 0..7 {
+        for i in 0..3 {
             let bit = (op_code >> i & 1) as u128;
             self.op_bits_registers[i][clk] = bit;
         }

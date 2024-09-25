@@ -8,20 +8,8 @@ fn test_decode_op() {
     let program = Program::compile(source).unwrap();
     let processor = Processor::run(program, default_program_inputs()).unwrap();
 
-    assert_eq!(
-        vec![0, 0, 0, 0, 0, 1, 1],
-        processor.decoder.decoder_state(0)
-    );
-    assert_eq!(
-        vec![0, 0, 0, 0, 0, 1, 1],
-        processor.decoder.decoder_state(1)
-    );
-    assert_eq!(
-        vec![0, 1, 0, 0, 1, 1, 1],
-        processor.decoder.decoder_state(2)
-    );
-    assert_eq!(
-        vec![0, 0, 0, 0, 0, 0, 0],
-        processor.decoder.decoder_state(3)
-    );
+    assert_eq!(vec![0, 1, 1], processor.decoder.decoder_state(0));
+    assert_eq!(vec![0, 1, 1], processor.decoder.decoder_state(1));
+    assert_eq!(vec![1, 0, 1], processor.decoder.decoder_state(2));
+    assert_eq!(vec![0, 0, 0], processor.decoder.decoder_state(3));
 }

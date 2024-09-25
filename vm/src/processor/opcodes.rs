@@ -4,13 +4,15 @@ pub type Operation = (OpCode, OpValue);
 #[derive(Copy, Clone, PartialEq)]
 #[repr(u8)]
 pub enum OpCode {
-    Push  = 0b0110_0000,
-    Read  = 0b0111_0000,
-    Read2 = 0b0111_0001,
-    Add   = 0b0111_0010,
-    SAdd  = 0b0111_0011,
-    Mul   = 0b0111_0100,
-    SMul  = 0b0111_0101,
+    Push  = 0b110,    // shift-right: 1
+    Read  = 0b111,    // shift-right: 1
+
+    Read2 = 0b11110,    // shift-right: 5
+
+    Add   = 0b101,    // shift-left: 1
+    Mul   = 0b100,    // shift-left: 1
+    SAdd  = 0b10101,    // shift-left: 1
+    SMul  = 0b10110,    // shift-left: 1
 }
 
 impl std::fmt::Display for OpCode {

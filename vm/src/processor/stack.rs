@@ -4,11 +4,12 @@ use super::{OpCode, OpValue, Operation};
 
 use fhe::{FheUInt8, ServerKey};
 
-const MIN_STACK_DEPTH: usize = 4;
+const MIN_STACK_DEPTH: usize = 8;
 
 pub struct Stack {
     clk: usize,
     registers: Vec<Vec<u128>>,
+    helpers: Vec<Vec<u128>>,
     tape_a: Vec<u8>,
     tape_b: Vec<FheUInt8>,
     max_depth: usize,
@@ -22,6 +23,8 @@ impl Stack {
             .map(|_| vec![0; init_trace_length])
             .collect();
 
+        let helpers: Vec<Vec<u128>> = (0..1).map(|_| vec![0; init_trace_length]).collect();
+
         // reverse inputs to pop them in order
         let mut tape_a = inputs.get_public();
         tape_a.reverse();
@@ -29,12 +32,13 @@ impl Stack {
         tape_b.reverse();
 
         Stack {
+            clk: 0,
             registers,
+            helpers,
             tape_a,
             tape_b,
             max_depth: 0,
             depth: 0,
-            clk: 0,
             server_key: inputs.get_server_key(),
         }
     }
@@ -44,7 +48,7 @@ impl Stack {
         self.ensure_trace_capacity();
 
         #[rustfmt::skip]
-        return match op.0 {
+        match op.0 {
             OpCode::Push              => self.op_push(op.1),
             OpCode::Read              => self.op_read(),
             OpCode::Read2             => self.op_read2(),
@@ -53,7 +57,11 @@ impl Stack {
             OpCode::SAdd              => self.op_sadd(),
             OpCode::Mul               => self.op_mul(),
             OpCode::SMul              => self.op_smul(),
-        };
+        }?;
+
+        self.set_helpers();
+
+        Ok(())
     }
 
     pub fn trace_length(&self) -> usize {
@@ -69,6 +77,15 @@ impl Stack {
         state
     }
 
+    #[cfg(test)]
+    pub fn helpers_state(&self, clk: usize) -> Vec<u128> {
+        let mut state = Vec::with_capacity(self.helpers.len());
+        for i in 0..self.helpers.len() {
+            state.push(self.helpers[i][clk]);
+        }
+        state
+    }
+
     pub fn current_state(&self) -> Vec<u128> {
         let mut state = Vec::with_capacity(self.registers.len());
         for i in 0..self.registers.len() {
@@ -78,6 +95,8 @@ impl Stack {
     }
 
     pub fn into_trace(mut self) -> Vec<Vec<u128>> {
+        let mut trace = Vec::new();
+
         let trace_length = self.trace_length();
 
         for register in self.registers.iter_mut() {
@@ -85,9 +104,15 @@ impl Stack {
             register.resize(trace_length, register[self.clk]);
         }
 
-        self.registers.truncate(self.max_depth);
+        for helper in self.helpers.iter_mut() {
+            helper.resize(self.clk + 1, 0);
+            helper.resize(trace_length, helper[self.clk]);
+        }
 
-        self.registers
+        trace.append(&mut self.helpers);
+        trace.append(&mut self.registers);
+
+        trace
     }
 
     fn op_push(&mut self, op_value: OpValue) -> Result<(), StackError> {
@@ -176,6 +201,7 @@ impl Stack {
         let ct: Vec<u128> = (1..=self.server_key.lwe_size())
             .map(|i: usize| self.registers[i][self.clk - 1])
             .collect();
+
         let scalar = self.registers[0][self.clk - 1] as u8;
 
         let result_ct = self.server_key.scalar_mul(&scalar, &FheUInt8::new(&ct));
@@ -242,11 +268,18 @@ impl Stack {
             for register in self.registers.iter_mut() {
                 register.resize(new_length, 0);
             }
+            for helper in self.helpers.iter_mut() {
+                helper.resize(new_length, 0);
+            }
         }
     }
 
     // Increment clock by 1
     fn advance_clock(&mut self) {
         self.clk += 1;
+    }
+
+    fn set_helpers(&mut self) {
+        self.helpers[0][self.clk] = self.depth as u128;
     }
 }

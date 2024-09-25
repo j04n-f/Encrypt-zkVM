@@ -8,6 +8,7 @@ bincode = { workspace = true }
 fhe = { path = "../fhe" }
 winterfell = { workspace = true }
 prover = { path = "../prover"}
+rand = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }

@@ -16,6 +16,8 @@ mod errors;
 
 pub use errors::StackError;
 
+use rand::Rng;
+
 #[cfg(test)]
 mod tests;
 
@@ -55,6 +57,13 @@ impl Processor {
         trace.extend(self.system.into_trace());
         trace.extend(self.decoder.into_trace());
         trace.extend(self.stack.into_trace());
+
+        let mut rng = rand::thread_rng();
+
+        for column in &mut trace {
+            let last = column.last_mut().unwrap();
+            *last = rng.gen();
+        }
 
         trace
     }
