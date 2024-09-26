@@ -38,20 +38,14 @@ impl ProgramError {
 
     pub fn extra_param(op: &[&str], step: usize) -> ProgramError {
         ProgramError {
-            message: format!(
-                "malformed instruction {}, too many parameters provided",
-                op[0]
-            ),
+            message: format!("malformed instruction {}, too many parameters provided", op[0]),
             step,
         }
     }
 
     pub fn invalid_param(op: &[&str], step: usize) -> ProgramError {
         ProgramError {
-            message: format!(
-                "malformed instruction {}, parameter '{}' is invalid",
-                op[0], op[1]
-            ),
+            message: format!("malformed instruction {}, parameter '{}' is invalid", op[0], op[1]),
             step,
         }
     }

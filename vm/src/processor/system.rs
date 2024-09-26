@@ -19,9 +19,7 @@ impl System {
         self.clk_trace[clk]
     }
 
-    pub fn into_trace(mut self) -> Vec<Vec<u128>> {
-        let trace_length = self.trace_length();
-
+    pub fn into_trace(mut self, trace_length: usize) -> Vec<Vec<u128>> {
         // fill clock trace with incremental clk values
         self.clk_trace.resize(trace_length, 0);
 

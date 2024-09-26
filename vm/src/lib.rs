@@ -1,6 +1,4 @@
-use winterfell::{
-    math::fields::f128::BaseElement, FieldExtension, Proof, ProofOptions, Prover, TraceTable,
-};
+use winterfell::{math::fields::f128::BaseElement, FieldExtension, Proof, ProofOptions, Prover, TraceTable};
 
 use prover::ExecutionProver;
 

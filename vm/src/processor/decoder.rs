@@ -32,9 +32,7 @@ impl Decoder {
         state
     }
 
-    pub fn into_trace(mut self) -> Vec<Vec<u128>> {
-        let trace_length = self.trace_length();
-
+    pub fn into_trace(mut self, trace_length: usize) -> Vec<Vec<u128>> {
         for op_bits_register in self.op_bits_registers.iter_mut() {
             op_bits_register.resize(self.clk + 1, 0);
             op_bits_register.resize(trace_length, 0);

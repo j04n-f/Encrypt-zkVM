@@ -18,9 +18,7 @@ pub struct Stack {
 
 impl Stack {
     pub fn new(inputs: &ProgramInputs, init_trace_length: usize) -> Stack {
-        let registers: Vec<Vec<u128>> = (0..MAX_STACK_DEPTH)
-            .map(|_| vec![0; init_trace_length])
-            .collect();
+        let registers: Vec<Vec<u128>> = (0..MAX_STACK_DEPTH).map(|_| vec![0; init_trace_length]).collect();
 
         let helpers: Vec<Vec<u128>> = (0..1).map(|_| vec![0; init_trace_length]).collect();
 
@@ -92,10 +90,8 @@ impl Stack {
         state
     }
 
-    pub fn into_trace(mut self) -> Vec<Vec<u128>> {
+    pub fn into_trace(mut self, trace_length: usize) -> Vec<Vec<u128>> {
         let mut trace = Vec::new();
-
-        let trace_length = self.trace_length();
 
         for register in self.registers.iter_mut() {
             register.resize(self.clk + 1, 0);

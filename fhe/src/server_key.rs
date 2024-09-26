@@ -58,12 +58,7 @@ impl ServerKey {
         }
         ciphertext.push(body);
 
-        FheUInt8::new(
-            &ciphertext
-                .iter()
-                .map(|value| value.0)
-                .collect::<Vec<u128>>(),
-        )
+        FheUInt8::new(&ciphertext.iter().map(|value| value.0).collect::<Vec<u128>>())
     }
 
     pub fn decrypt(&self, value: &FheUInt8) -> u8 {
@@ -93,12 +88,7 @@ impl ServerKey {
         let mut ciphertext = self.generate_trivial_mask();
         let body = Wrapping(self.parameters.delta as u128) * Wrapping(*message as u128);
         ciphertext.push(body);
-        FheUInt8::new(
-            &ciphertext
-                .iter()
-                .map(|value| value.0)
-                .collect::<Vec<u128>>(),
-        )
+        FheUInt8::new(&ciphertext.iter().map(|value| value.0).collect::<Vec<u128>>())
     }
 
     pub fn lwe_size(&self) -> usize {

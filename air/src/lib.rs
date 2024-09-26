@@ -1,7 +1,6 @@
 use winterfell::{
     math::{fields::f128::BaseElement, FieldElement, ToElements},
-    Air, AirContext, Assertion, EvaluationFrame, ProofOptions, TraceInfo,
-    TransitionConstraintDegree,
+    Air, AirContext, Assertion, EvaluationFrame, ProofOptions, TraceInfo, TransitionConstraintDegree,
 };
 
 pub struct PublicInputs {
@@ -26,7 +25,6 @@ pub struct ProcessorAir {
 }
 
 impl ProcessorAir {
-    /// Returns last step of the execution trace.
     pub fn last_step(&self) -> usize {
         self.trace_length() - self.context().num_transition_exemptions()
     }
@@ -50,9 +48,13 @@ impl Air for ProcessorAir {
             TransitionConstraintDegree::new(2),
         ];
 
+        // allow to transition exemptions
+        // last row has random values
+        // to improve the column degree computation
+        let air_context = AirContext::new(trace_info, degrees, 18, options).set_num_transition_exemptions(2);
+
         ProcessorAir {
-            context: AirContext::new(trace_info, degrees, 18, options)
-                .set_num_transition_exemptions(2),
+            context: air_context,
             stack_outputs: pub_inputs.stack_outputs,
         }
     }
@@ -79,15 +81,11 @@ impl Air for ProcessorAir {
 
         // Add
         // 0 = b0 * (1 - b1) * b2 * (s0' - (s0 + s1)) || degree 4
-        result[3] =
-            b0 * (E::ONE - b1) * b2 * (frame.next()[5] - (frame.current()[5] + frame.current()[6]));
+        result[3] = b0 * (E::ONE - b1) * b2 * (frame.next()[5] - (frame.current()[5] + frame.current()[6]));
 
         // Mul
         // 0 = b0 * (1 - b1) * (1 - b2) * (s0' - s0 * s1) || degree 5
-        result[4] = b0
-            * (E::ONE - b1)
-            * (E::ONE - b2)
-            * (frame.next()[5] - frame.current()[5] * frame.current()[6]);
+        result[4] = b0 * (E::ONE - b1) * (E::ONE - b2) * (frame.next()[5] - frame.current()[5] * frame.current()[6]);
 
         // Push
         // 0 = b0 * b1 * (1 - b2) * (s1' - s0) || degree 4
@@ -105,7 +103,7 @@ impl Air for ProcessorAir {
     }
 
     fn get_assertions(&self) -> Vec<Assertion<Self::BaseField>> {
-        let mut assertions = Vec::with_capacity(2);
+        let mut assertions = Vec::with_capacity(18);
         // clk[0] = 0
         assertions.push(Assertion::single(0, 0, Self::BaseField::ZERO));
 

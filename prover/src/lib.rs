@@ -2,8 +2,8 @@ use winterfell::{
     crypto::{hashers::Blake3_256, DefaultRandomCoin},
     math::{fields::f128::BaseElement, FieldElement},
     matrix::ColMatrix,
-    AuxRandElements, DefaultConstraintEvaluator, DefaultTraceLde, ProofOptions, Prover,
-    StarkDomain, TraceInfo, TracePolyTable, TraceTable,
+    AuxRandElements, DefaultConstraintEvaluator, DefaultTraceLde, ProofOptions, Prover, StarkDomain, TraceInfo,
+    TracePolyTable, TraceTable,
 };
 
 use air::{ProcessorAir, PublicInputs};
@@ -20,10 +20,7 @@ pub struct ExecutionProver {
 
 impl ExecutionProver {
     pub fn new(options: ProofOptions, stack_outputs: Vec<BaseElement>) -> Self {
-        Self {
-            options,
-            stack_outputs,
-        }
+        Self { options, stack_outputs }
     }
 }
 

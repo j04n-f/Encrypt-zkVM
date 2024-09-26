@@ -21,10 +21,7 @@ fn test_read_program() {
 
     let program = Program::load(&path).unwrap();
 
-    assert_eq!(
-        format!("{program}"),
-        String::from("push(1) push(2) add read mul")
-    );
+    assert_eq!(format!("{program}"), String::from("push(1) push(2) add read mul"));
 
     path.close().unwrap();
 }
@@ -34,10 +31,7 @@ fn test_compile_program() {
     let source = "push.1 push.2 add read mul";
     let program = Program::compile(source).unwrap();
 
-    assert_eq!(
-        format!("{program}"),
-        String::from("push(1) push(2) add read mul")
-    );
+    assert_eq!(format!("{program}"), String::from("push(1) push(2) add read mul"));
 }
 
 #[test]
@@ -45,8 +39,5 @@ fn test_empty_program() {
     let source = "";
     let error = Program::compile(source).unwrap_err();
 
-    assert_eq!(
-        format!("{error}"),
-        format!("{}", ProgramError::empty_program())
-    );
+    assert_eq!(format!("{error}"), format!("{}", ProgramError::empty_program()));
 }

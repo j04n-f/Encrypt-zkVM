@@ -122,10 +122,7 @@ fn test_add_stack_underflow() {
     let program = Program::compile(source).unwrap();
     let error = Processor::run(program, default_program_inputs()).unwrap_err();
 
-    assert_eq!(
-        format!("{error}"),
-        format!("{}", StackError::stack_underflow("add", 2))
-    );
+    assert_eq!(format!("{error}"), format!("{}", StackError::stack_underflow("add", 2)));
 }
 
 #[test]
@@ -146,10 +143,7 @@ fn test_mul_stack_underflow() {
     let program = Program::compile(source).unwrap();
     let error = Processor::run(program, default_program_inputs()).unwrap_err();
 
-    assert_eq!(
-        format!("{error}"),
-        format!("{}", StackError::stack_underflow("mul", 2))
-    );
+    assert_eq!(format!("{error}"), format!("{}", StackError::stack_underflow("mul", 2)));
 }
 
 #[test]
@@ -170,10 +164,7 @@ fn test_read_empty_inputs() {
     let program = Program::compile(source).unwrap();
     let error = Processor::run(program, default_program_inputs()).unwrap_err();
 
-    assert_eq!(
-        format!("{error}"),
-        format!("{}", StackError::empty_inputs(3))
-    );
+    assert_eq!(format!("{error}"), format!("{}", StackError::empty_inputs(3)));
 }
 
 #[test]
@@ -182,10 +173,7 @@ fn test_read2_empty_inputs() {
     let program = Program::compile(source).unwrap();
     let error = Processor::run(program, default_program_inputs()).unwrap_err();
 
-    assert_eq!(
-        format!("{error}"),
-        format!("{}", StackError::empty_inputs(2))
-    );
+    assert_eq!(format!("{error}"), format!("{}", StackError::empty_inputs(2)));
 }
 
 #[test]
@@ -199,8 +187,5 @@ fn test_stack_overflow() {
     let program = Program::compile(source).unwrap();
     let error = Processor::run(program, default_program_inputs()).unwrap_err();
 
-    assert_eq!(
-        format!("{error}"),
-        format!("{}", StackError::stack_overflow("push", 9))
-    );
+    assert_eq!(format!("{error}"), format!("{}", StackError::stack_overflow("push", 9)));
 }

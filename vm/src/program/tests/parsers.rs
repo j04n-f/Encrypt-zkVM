@@ -5,10 +5,7 @@ fn test_invalid_op() {
     let source = "push.1 push.2 ad";
     let error = Program::compile(source).unwrap_err();
 
-    assert_eq!(
-        format!("{error}"),
-        format!("{}", ProgramError::invalid_op(&["ad"], 3))
-    );
+    assert_eq!(format!("{error}"), format!("{}", ProgramError::invalid_op(&["ad"], 3)));
 }
 
 #[test]
