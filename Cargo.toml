@@ -5,7 +5,7 @@ members = [
     "vm",
     "air",
     "prover"
-]
+, "crypto"]
 
 resolver = "2"
 

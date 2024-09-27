@@ -74,32 +74,32 @@ impl Air for ProcessorAir {
         result[0] = frame.next()[0] - (frame.current()[0] + E::ONE);
 
         // Stack Depth
-        result[1] = frame.next()[4] - frame.current()[4] - b1 + b0 * (E::ONE - b1);
+        result[1] = frame.next()[10] - frame.current()[10] - b1 + b0 * (E::ONE - b1);
 
         // Shr o Shl
         result[2] = b0 * (E::ONE - b0);
 
         // Add
         // 0 = b0 * (1 - b1) * b2 * (s0' - (s0 + s1)) || degree 4
-        result[3] = b0 * (E::ONE - b1) * b2 * (frame.next()[5] - (frame.current()[5] + frame.current()[6]));
+        result[3] = b0 * (E::ONE - b1) * b2 * (frame.next()[11] - (frame.current()[11] + frame.current()[12]));
 
         // Mul
         // 0 = b0 * (1 - b1) * (1 - b2) * (s0' - s0 * s1) || degree 5
-        result[4] = b0 * (E::ONE - b1) * (E::ONE - b2) * (frame.next()[5] - frame.current()[5] * frame.current()[6]);
+        result[4] = b0 * (E::ONE - b1) * (E::ONE - b2) * (frame.next()[11] - frame.current()[11] * frame.current()[12]);
 
         // Push
         // 0 = b0 * b1 * (1 - b2) * (s1' - s0) || degree 4
         // Pushed value onto the stack is injected (enforced) into sponge state
-        result[5] = b0 * b1 * (E::ONE - b2) * (frame.next()[6] - frame.current()[5]);
+        result[5] = b0 * b1 * (E::ONE - b2) * (frame.next()[12] - frame.current()[11]);
 
         // Read
         // 0 = b0 * b1 * b2 * (s1' - s0) || degree 4
         // Read value onto the stack is injected (enforced) into sponge state
-        result[6] = b0 * b1 * b2 * (frame.next()[6] - frame.current()[5]);
+        result[6] = b0 * b1 * b2 * (frame.next()[12] - frame.current()[11]);
 
         // Noop
         // 0 = (1 - b2) * (1 - b2) * (1 - b2) * (s1' - s0) || degree 2
-        result[7] = (E::ONE - b0) * (frame.next()[5] - frame.current()[5]);
+        result[7] = (E::ONE - b0) * (frame.next()[11] - frame.current()[11]);
     }
 
     fn get_assertions(&self) -> Vec<Assertion<Self::BaseField>> {
@@ -108,15 +108,15 @@ impl Air for ProcessorAir {
         assertions.push(Assertion::single(0, 0, Self::BaseField::ZERO));
 
         // depth[0] = 0
-        assertions.push(Assertion::single(4, 0, Self::BaseField::ZERO));
+        assertions.push(Assertion::single(10, 0, Self::BaseField::ZERO));
 
         let last_step = self.last_step();
 
         // Initial Stack == 0
         // Final Stack == Stack Output
         for i in 0..8 {
-            assertions.push(Assertion::single(i + 5, 0, Self::BaseField::ZERO));
-            assertions.push(Assertion::single(i + 5, last_step, self.stack_outputs[i]));
+            assertions.push(Assertion::single(i + 11, 0, Self::BaseField::ZERO));
+            assertions.push(Assertion::single(i + 11, last_step, self.stack_outputs[i]));
         }
 
         assertions

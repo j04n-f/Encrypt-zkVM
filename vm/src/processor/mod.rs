@@ -18,8 +18,13 @@ pub use errors::StackError;
 
 use rand::Rng;
 
+use winterfell::math::{fields::f128::BaseElement, FieldElement};
+
 #[cfg(test)]
 mod tests;
+
+const ZERO: BaseElement = BaseElement::ZERO;
+const ONE: BaseElement = BaseElement::ONE;
 
 // winterfell constrains
 // trace length must be at least 8 and multiple of 2
@@ -57,7 +62,7 @@ impl Processor {
         Ok(processor)
     }
 
-    pub fn trace(self) -> Vec<Vec<u128>> {
+    pub fn trace(self) -> Vec<Vec<BaseElement>> {
         let mut trace = Vec::new();
 
         let trace_length = {
@@ -74,14 +79,25 @@ impl Processor {
 
         trace.extend(self.system.into_trace(trace_length));
         trace.extend(self.decoder.into_trace(trace_length));
-        trace.extend(self.stack.into_trace(trace_length));
+        trace.extend(
+            self.stack
+                .into_trace(trace_length)
+                .iter()
+                .map(|trace| {
+                    trace
+                        .iter()
+                        .map(|value| BaseElement::try_from(*value).unwrap())
+                        .collect::<Vec<BaseElement>>()
+                })
+                .collect::<Vec<Vec<BaseElement>>>(),
+        );
 
         let mut rng = rand::thread_rng();
 
         for column in &mut trace {
             let last = column.last_mut().unwrap();
             // exclude 0 t0 force columns to have at least on value different to 0
-            *last = rng.gen_range(1..=u128::MAX);
+            *last = BaseElement::try_from(rng.gen_range(1..=u128::MAX)).unwrap();
         }
 
         trace

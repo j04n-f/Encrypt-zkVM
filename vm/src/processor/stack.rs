@@ -1,6 +1,6 @@
 use super::ProgramInputs;
 use super::StackError;
-use super::{OpCode, OpValue, Operation};
+use super::{OpCode, Operation};
 
 use fhe::{FheUInt8, ServerKey};
 
@@ -14,6 +14,7 @@ pub struct Stack {
     tape_b: Vec<FheUInt8>,
     depth: usize,
     server_key: ServerKey,
+    trace_length: usize,
 }
 
 impl Stack {
@@ -36,6 +37,7 @@ impl Stack {
             tape_b,
             depth: 0,
             server_key: inputs.get_server_key(),
+            trace_length: init_trace_length,
         }
     }
 
@@ -44,8 +46,8 @@ impl Stack {
         self.ensure_trace_capacity();
 
         #[rustfmt::skip]
-        match op.0 {
-            OpCode::Push              => self.op_push(op.1),
+        match op.op_code() {
+            OpCode::Push              => self.op_push(op.value()),
             OpCode::Read              => self.op_read(),
             OpCode::Read2             => self.op_read2(),
 
@@ -61,7 +63,7 @@ impl Stack {
     }
 
     pub fn trace_length(&self) -> usize {
-        self.registers[0].len()
+        self.trace_length
     }
 
     #[cfg(test)]
@@ -93,14 +95,14 @@ impl Stack {
     pub fn into_trace(mut self, trace_length: usize) -> Vec<Vec<u128>> {
         let mut trace = Vec::new();
 
-        for register in self.registers.iter_mut() {
-            register.resize(self.clk + 1, 0);
-            register.resize(trace_length, register[self.clk]);
+        for col in self.registers.iter_mut() {
+            col.resize(self.clk + 1, 0);
+            col.resize(trace_length, col[self.clk]);
         }
 
-        for helper in self.helpers.iter_mut() {
-            helper.resize(self.clk + 1, 0);
-            helper.resize(trace_length, helper[self.clk]);
+        for col in self.helpers.iter_mut() {
+            col.resize(self.clk + 1, 0);
+            col.resize(trace_length, col[self.clk]);
         }
 
         trace.append(&mut self.helpers);
@@ -109,9 +111,9 @@ impl Stack {
         trace
     }
 
-    fn op_push(&mut self, op_value: OpValue) -> Result<(), StackError> {
+    fn op_push(&mut self, value: u8) -> Result<(), StackError> {
         self.shift_right("push", 0, 1)?;
-        self.registers[0][self.clk] = op_value.value() as u128;
+        self.registers[0][self.clk] = value as u128;
         Ok(())
     }
 
@@ -247,13 +249,13 @@ impl Stack {
     // Trace length is doubled every time it needs to be increased.
     // Constrain: trace_length % 2 = 0.
     pub fn ensure_trace_capacity(&mut self) {
-        if self.clk >= self.trace_length() {
-            let new_length = self.trace_length() * 2;
-            for register in self.registers.iter_mut() {
-                register.resize(new_length, 0);
+        if self.clk >= self.trace_length {
+            self.trace_length *= 2;
+            for col in self.registers.iter_mut() {
+                col.resize(self.trace_length, 0);
             }
-            for helper in self.helpers.iter_mut() {
-                helper.resize(new_length, 0);
+            for col in self.helpers.iter_mut() {
+                col.resize(self.trace_length, 0);
             }
         }
     }

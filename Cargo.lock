@@ -101,6 +101,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "crypto"
+version = "0.1.0"
+dependencies = [
+ "winterfell",
+]
+
+[[package]]
 name = "crypto-common"
 version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -427,6 +434,7 @@ name = "vm"
 version = "0.1.0"
 dependencies = [
  "bincode",
+ "crypto",
  "fhe",
  "prover",
  "rand",

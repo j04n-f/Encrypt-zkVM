@@ -13,18 +13,7 @@ pub fn prove(program: Program, inputs: ProgramInputs) -> Result<(Vec<u128>, Proo
 
     let stack_output = processor.get_stack_output();
 
-    let trace = TraceTable::init(
-        processor
-            .trace()
-            .iter()
-            .map(|trace| {
-                trace
-                    .iter()
-                    .map(|value| BaseElement::try_from(*value).unwrap())
-                    .collect::<Vec<BaseElement>>()
-            })
-            .collect::<Vec<Vec<BaseElement>>>(),
-    );
+    let trace = TraceTable::init(processor.trace());
 
     let options = ProofOptions::new(32, 8, 0, FieldExtension::None, 8, 127);
 

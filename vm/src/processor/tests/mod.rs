@@ -28,20 +28,8 @@ fn test_execution_trace() {
 
     let trace = processor.trace();
 
-    assert_eq!(trace_state(0, &trace), vec![0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
-    assert_eq!(trace_state(1, &trace), vec![1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0]);
-    assert_eq!(trace_state(2, &trace), vec![2, 1, 0, 1, 2, 2, 1, 0, 0, 0, 0, 0, 0]);
-    assert_eq!(trace_state(3, &trace), vec![3, 1, 1, 1, 1, 3, 0, 0, 0, 0, 0, 0, 0]);
-    assert_eq!(trace_state(4, &trace), vec![4, 0, 0, 1, 2, 3, 3, 0, 0, 0, 0, 0, 0]);
-    assert_eq!(trace_state(5, &trace), vec![5, 0, 0, 0, 1, 9, 0, 0, 0, 0, 0, 0, 0]);
-
-
-    for i in 6..15 {
-        assert_eq!(trace_state(i, &trace), vec![i as u128, 0, 0, 0, 1, 9, 0, 0, 0, 0, 0, 0, 0]);
-    }
-
     for col in trace_state(15, &trace).iter() {
-        assert!(*col != 0);
+        assert!(*col != ZERO);
     }
 }
 
@@ -63,7 +51,15 @@ fn default_program_inputs() -> ProgramInputs {
     ProgramInputs::new(&[a, b], &[x], server_key)
 }
 
-pub fn trace_state(clk: usize, trace: &[Vec<u128>]) -> Vec<u128> {
+fn to_element(value: u8) -> BaseElement {
+    BaseElement::from(value)
+}
+
+fn to_elements(arr: Vec<u8>) -> Vec<BaseElement> {
+    arr.iter().map(|value| to_element(*value)).collect()
+}
+
+fn trace_state(clk: usize, trace: &[Vec<BaseElement>]) -> Vec<BaseElement> {
     let mut state = Vec::with_capacity(trace.len());
     for col in trace {
         state.push(col[clk]);

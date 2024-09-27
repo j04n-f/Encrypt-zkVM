@@ -1,4 +1,30 @@
-pub type Operation = (OpCode, OpValue);
+#[derive(Copy, Clone)]
+pub struct Operation {
+    op_code: OpCode,
+    op_value: OpValue,
+}
+
+impl Operation {
+    pub fn new(op_code: OpCode, op_value: OpValue) -> Operation {
+        Operation { op_code, op_value }
+    }
+
+    pub fn code(&self) -> u8 {
+        self.op_code as u8
+    }
+
+    pub fn value(&self) -> u8 {
+        self.op_value.value()
+    }
+
+    pub fn op_code(&self) -> OpCode {
+        self.op_code
+    }
+
+    pub fn op_value(&self) -> OpValue {
+        self.op_value
+    }
+}
 
 #[rustfmt::skip]
 #[derive(Copy, Clone, PartialEq)]
