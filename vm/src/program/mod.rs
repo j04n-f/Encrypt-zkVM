@@ -3,7 +3,10 @@ use std::{fs, path::Path};
 use crate::processor::{OpCode, OpValue, Operation};
 
 mod errors;
-use crypto::{Hash, Rescue128};
+use crypto::{
+    rescue::{CYCLE_LENGTH, NUM_ROUNDS},
+    Hash, Rescue128,
+};
 use errors::ProgramError;
 
 mod parsers;
@@ -15,6 +18,8 @@ use winterfell::math::{fields::f128::BaseElement, FieldElement};
 
 #[cfg(test)]
 mod tests;
+
+const PUSH_OP_ALIGNMENT: usize = 8;
 
 pub struct Program {
     code: Vec<Operation>,
@@ -43,7 +48,6 @@ impl Program {
         for (i, token) in tokens.iter().enumerate() {
             let op = parse_op(i + 1, token)?;
 
-            // TODO: Change Rescue-Prime to absorb 2 elements per round
             sponge.update(&[
                 BaseElement::from(op.code()),
                 BaseElement::from(op.value()),
@@ -51,8 +55,22 @@ impl Program {
                 BaseElement::ZERO,
             ]);
 
+            if let OpCode::Push = op.op_code() {
+                let alignment = code.len() % PUSH_OP_ALIGNMENT;
+                let pad_length = (PUSH_OP_ALIGNMENT - alignment) % PUSH_OP_ALIGNMENT;
+                code.resize(code.len() + pad_length, Operation::noop());
+            }
+
+            if code.len() % CYCLE_LENGTH >= NUM_ROUNDS {
+                let padded_length = compute_padding(code.len());
+                code.resize(padded_length, Operation::noop());
+            }
+
             code.push(op);
         }
+
+        let padded_length = compute_padding(code.len());
+        code.resize(padded_length, Operation::noop());
 
         let hash = sponge.finalize();
 
@@ -82,6 +100,10 @@ fn parse_op(step: usize, line: &str) -> Result<Operation, ProgramError> {
         "smul"  => parsers::parse_smul(&op, step),
         _       => Err(ProgramError::invalid_op(&op, step)),
     };
+}
+
+fn compute_padding(length: usize) -> usize {
+    length + (CYCLE_LENGTH - (length % CYCLE_LENGTH) - 1)
 }
 
 impl std::fmt::Display for Program {

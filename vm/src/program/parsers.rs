@@ -13,47 +13,47 @@ pub fn parse_push(op: &[&str], step: usize) -> Result<Operation, ProgramError> {
         Err(_) => return Err(ProgramError::invalid_param(op, step)),
     };
 
-    Ok(Operation::new(OpCode::Push, OpValue::Push(value)))
+    Ok(Operation::push(value))
 }
 
 pub fn parse_read(op: &[&str], step: usize) -> Result<Operation, ProgramError> {
     if op.len() > 1 {
         return Err(ProgramError::extra_param(op, step));
     }
-    Ok(Operation::new(OpCode::Read, OpValue::None))
+    Ok(Operation::read())
 }
 
 pub fn parse_read2(op: &[&str], step: usize) -> Result<Operation, ProgramError> {
     if op.len() > 1 {
         return Err(ProgramError::extra_param(op, step));
     }
-    Ok(Operation::new(OpCode::Read2, OpValue::None))
+    Ok(Operation::read2())
 }
 
 pub fn parse_add(op: &[&str], step: usize) -> Result<Operation, ProgramError> {
     if op.len() > 1 {
         return Err(ProgramError::extra_param(op, step));
     }
-    Ok(Operation::new(OpCode::Add, OpValue::None))
+    Ok(Operation::add())
 }
 
 pub fn parse_sadd(op: &[&str], step: usize) -> Result<Operation, ProgramError> {
     if op.len() > 1 {
         return Err(ProgramError::extra_param(op, step));
     }
-    Ok(Operation::new(OpCode::SAdd, OpValue::None))
+    Ok(Operation::sadd())
 }
 
 pub fn parse_mul(op: &[&str], step: usize) -> Result<Operation, ProgramError> {
     if op.len() > 1 {
         return Err(ProgramError::extra_param(op, step));
     }
-    Ok(Operation::new(OpCode::Mul, OpValue::None))
+    Ok(Operation::mul())
 }
 
 pub fn parse_smul(op: &[&str], step: usize) -> Result<Operation, ProgramError> {
     if op.len() > 1 {
         return Err(ProgramError::extra_param(op, step));
     }
-    Ok(Operation::new(OpCode::SMul, OpValue::None))
+    Ok(Operation::smul())
 }

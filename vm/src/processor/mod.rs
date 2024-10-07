@@ -1,7 +1,7 @@
 use crate::program::{Program, ProgramInputs};
 
 pub mod opcodes;
-pub use opcodes::{OpCode, OpValue, Operation};
+pub use opcodes::{HashOperation, OpCode, OpValue, Operation};
 
 mod stack;
 use stack::Stack;
@@ -11,6 +11,9 @@ use decoder::Decoder;
 
 mod system;
 use system::System;
+
+mod chiplets;
+use chiplets::Chiplets;
 
 mod errors;
 
@@ -41,6 +44,7 @@ pub struct Processor {
     stack: Stack,
     decoder: Decoder,
     system: System,
+    chiplets: Chiplets,
 }
 
 impl Processor {
@@ -49,6 +53,7 @@ impl Processor {
             stack: Stack::new(&inputs, MIN_TRACE_LENGTH),
             decoder: Decoder::new(MIN_TRACE_LENGTH),
             system: System::new(MIN_TRACE_LENGTH),
+            chiplets: Chiplets::new(MIN_TRACE_LENGTH),
         }
     }
 
@@ -65,20 +70,11 @@ impl Processor {
     pub fn trace(self) -> Vec<Vec<BaseElement>> {
         let mut trace = Vec::new();
 
-        let trace_length = {
-            let traces_len = [
-                self.system.trace_length(),
-                self.stack.trace_length(),
-                self.decoder.trace_length(),
-            ];
-
-            let max_len = traces_len.iter().max().unwrap();
-
-            (max_len + NUM_RAND_ROWS).next_power_of_two()
-        };
+        let trace_length = (self.chiplets.trace_length() + NUM_RAND_ROWS).next_power_of_two();
 
         trace.extend(self.system.into_trace(trace_length));
         trace.extend(self.decoder.into_trace(trace_length));
+        trace.extend(self.chiplets.into_trace(trace_length));
         trace.extend(
             self.stack
                 .into_trace(trace_length)
@@ -113,6 +109,7 @@ impl Processor {
         self.system.advance_step();
         self.stack.execute_op(op)?;
         self.decoder.decode_op(op);
+        self.chiplets.hash_op(op);
         Ok(())
     }
 }

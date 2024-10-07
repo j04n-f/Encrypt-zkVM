@@ -47,6 +47,8 @@ impl Stack {
 
         #[rustfmt::skip]
         match op.op_code() {
+            OpCode::Noop              => self.op_noop(),
+
             OpCode::Push              => self.op_push(op.value()),
             OpCode::Read              => self.op_read(),
             OpCode::Read2             => self.op_read2(),
@@ -109,6 +111,13 @@ impl Stack {
         trace.append(&mut self.registers);
 
         trace
+    }
+
+    fn op_noop(&mut self) -> Result<(), StackError> {
+        for i in 0..self.depth {
+            self.registers[i][self.clk] = self.registers[i][self.clk - 1];
+        }
+        Ok(())
     }
 
     fn op_push(&mut self, value: u8) -> Result<(), StackError> {
@@ -248,7 +257,7 @@ impl Stack {
     // Ensure there is enough memory allocated for the trace to accommodate a new row.
     // Trace length is doubled every time it needs to be increased.
     // Constrain: trace_length % 2 = 0.
-    pub fn ensure_trace_capacity(&mut self) {
+    fn ensure_trace_capacity(&mut self) {
         if self.clk >= self.trace_length {
             self.trace_length *= 2;
             for col in self.registers.iter_mut() {

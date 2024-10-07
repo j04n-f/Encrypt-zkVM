@@ -43,7 +43,7 @@ impl System {
         self.clk += 1;
     }
 
-    pub fn ensure_trace_capacity(&mut self) {
+    fn ensure_trace_capacity(&mut self) {
         if self.clk >= self.trace_length() {
             let new_length = self.trace_length() * 2;
             self.clk_trace.resize(new_length, ZERO);
