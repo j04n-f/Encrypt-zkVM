@@ -14,8 +14,6 @@ mod parsers;
 pub mod inputs;
 pub use inputs::ProgramInputs;
 
-use winterfell::math::{fields::f128::BaseElement, FieldElement};
-
 #[cfg(test)]
 mod tests;
 
@@ -48,13 +46,6 @@ impl Program {
         for (i, token) in tokens.iter().enumerate() {
             let op = parse_op(i + 1, token)?;
 
-            sponge.update(&[
-                BaseElement::from(op.code()),
-                BaseElement::from(op.value()),
-                BaseElement::ZERO,
-                BaseElement::ZERO,
-            ]);
-
             if let OpCode::Push = op.op_code() {
                 let alignment = code.len() % PUSH_OP_ALIGNMENT;
                 let pad_length = (PUSH_OP_ALIGNMENT - alignment) % PUSH_OP_ALIGNMENT;
@@ -72,9 +63,14 @@ impl Program {
         let padded_length = compute_padding(code.len());
         code.resize(padded_length, Operation::noop());
 
-        let hash = sponge.finalize();
+        for op in code.iter() {
+            sponge.update(op.code(), op.value());
+        }
 
-        Ok(Program { code, hash })
+        Ok(Program {
+            code,
+            hash: sponge.hash(),
+        })
     }
 
     pub fn get_code(&self) -> &[Operation] {

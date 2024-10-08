@@ -8,7 +8,10 @@ pub use program::{Program, ProgramInputs};
 mod processor;
 use processor::{Processor, StackError};
 
-pub fn prove(program: Program, inputs: ProgramInputs) -> Result<(Vec<u128>, Proof), StackError> {
+use crypto::rescue::Hash;
+
+pub fn prove(program: Program, inputs: ProgramInputs) -> Result<(Hash, Vec<u128>, Proof), StackError> {
+    let program_hash = program.get_hash();
     let processor = Processor::run(program, inputs)?;
 
     let stack_output = processor.get_stack_output();
@@ -19,6 +22,7 @@ pub fn prove(program: Program, inputs: ProgramInputs) -> Result<(Vec<u128>, Proo
 
     let prover = ExecutionProver::new(
         options,
+        program_hash.to_elements(),
         stack_output
             .iter()
             .map(|value| BaseElement::try_from(*value).unwrap())
@@ -27,5 +31,5 @@ pub fn prove(program: Program, inputs: ProgramInputs) -> Result<(Vec<u128>, Proo
 
     let proof = prover.prove(trace).unwrap();
 
-    Ok((stack_output, proof))
+    Ok((program_hash, stack_output, proof))
 }

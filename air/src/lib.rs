@@ -5,27 +5,34 @@ use winterfell::{
 
 use crypto::{
     rescue,
-    rescue::{CYCLE_LENGTH, STATE_WIDTH},
+    rescue::{CYCLE_LENGTH, STATE_WIDTH, DIGEST_SIZE},
 };
 
 pub struct PublicInputs {
+    program_hash: [BaseElement; DIGEST_SIZE],
     stack_outputs: Vec<BaseElement>,
 }
 
 impl PublicInputs {
-    pub fn new(stack_outputs: Vec<BaseElement>) -> PublicInputs {
-        PublicInputs { stack_outputs }
+    pub fn new(program_hash: [BaseElement; DIGEST_SIZE], stack_outputs: Vec<BaseElement>) -> PublicInputs {
+        PublicInputs { program_hash, stack_outputs }
     }
 }
 
 impl ToElements<BaseElement> for PublicInputs {
     fn to_elements(&self) -> Vec<BaseElement> {
-        self.stack_outputs.clone()
+        let mut elements = Vec::new();
+
+        elements.extend(&self.program_hash);
+        elements.extend(&self.stack_outputs);
+
+        elements
     }
 }
 
 pub struct ProcessorAir {
     context: AirContext<BaseElement>,
+    program_hash: [BaseElement; DIGEST_SIZE],
     stack_outputs: Vec<BaseElement>,
 }
 
@@ -64,10 +71,11 @@ impl Air for ProcessorAir {
         // allow to transition exemptions
         // last row has random values
         // to improve the column degree computation
-        let air_context = AirContext::new(trace_info, degrees, 18, options).set_num_transition_exemptions(2);
+        let air_context = AirContext::new(trace_info, degrees, 22, options).set_num_transition_exemptions(2);
 
         ProcessorAir {
             context: air_context,
+            program_hash: pub_inputs.program_hash,
             stack_outputs: pub_inputs.stack_outputs,
         }
     }
@@ -157,6 +165,13 @@ impl Air for ProcessorAir {
         assertions.push(Assertion::single(9, 0, Self::BaseField::ZERO));
 
         let last_step = self.last_step();
+
+        // Initial Hash == 0
+        // Final Hash == Program Hash
+        for i in 0..2 {
+            assertions.push(Assertion::single(i + 5, 0, Self::BaseField::ZERO));
+            assertions.push(Assertion::single(i + 5, last_step, self.program_hash[i]));
+        }
 
         // Initial Stack == 0
         // Final Stack == Stack Output

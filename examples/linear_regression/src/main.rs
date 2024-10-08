@@ -5,12 +5,12 @@ use fhe::{FheUInt8, LweParameters, ServerKey};
 use vm::{Program, ProgramInputs};
 
 use winterfell::{
-    crypto::{hashers::Blake3_256, DefaultRandomCoin},
-    math::fields::f128::BaseElement,
-    verify, AcceptableOptions, Proof,
+    crypto::{hashers::Blake3_256, DefaultRandomCoin}, math::fields::f128::BaseElement, verify, AcceptableOptions, Deserializable, Proof
 };
 
 use air::{ProcessorAir, PublicInputs};
+
+use crypto::rescue::Hash;
 
 type Blake3 = Blake3_256<BaseElement>;
 
@@ -54,10 +54,11 @@ fn main() {
 
         let inputs = ProgramInputs::new(&public_inputs, &secret_inputs, server_key);
 
-        let (output, proof) = vm::prove(program, inputs).unwrap();
+        let (hash, output, proof) = vm::prove(program, inputs).unwrap();
 
         let mut serialized_outputs = Vec::new();
         bincode::serialize_into(&mut serialized_outputs, &output).unwrap();
+        bincode::serialize_into(&mut serialized_outputs, &hash.to_bytes()).unwrap();
         bincode::serialize_into(&mut serialized_outputs, &proof.to_bytes()).unwrap();
 
         serialized_outputs
@@ -66,9 +67,13 @@ fn main() {
     // Client
     let mut outputs = Cursor::new(serialized_outputs);
     let output: Vec<u128> = bincode::deserialize_from(&mut outputs).unwrap();
-    let proof: Vec<u8> = bincode::deserialize_from(&mut outputs).unwrap();
+    let b_hash: [u8; 32] = bincode::deserialize_from(&mut outputs).unwrap();
+    let b_proof: Vec<u8> = bincode::deserialize_from(&mut outputs).unwrap();
 
     let result = FheUInt8::new(&output);
+
+    let hash = Hash::read_from_bytes(&b_hash).unwrap();
+    let proof = Proof::from_bytes(&b_proof).unwrap();
 
     let _clear_result = client_key.decrypt(&result);
 
@@ -77,8 +82,9 @@ fn main() {
     let min_opts = AcceptableOptions::MinConjecturedSecurity(95);
 
     verify::<ProcessorAir, Blake3, DefaultRandomCoin<Blake3>>(
-        Proof::from_bytes(&proof).unwrap(),
+        proof,
         PublicInputs::new(
+            hash.to_elements(),
             output
                 .iter()
                 .map(|value| BaseElement::try_from(*value).unwrap())

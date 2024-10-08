@@ -203,6 +203,7 @@ version = "0.1.0"
 dependencies = [
  "air",
  "bincode",
+ "crypto",
  "fhe",
  "vm",
  "winterfell",

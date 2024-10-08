@@ -1,13 +1,10 @@
 use super::{HashOperation, Operation, ONE, ZERO};
-use crypto::{
-    rescue,
-    rescue::{CYCLE_LENGTH, NUM_ROUNDS, STATE_WIDTH},
-};
-use winterfell::math::{fields::f128::BaseElement, FieldElement};
+use crypto::{rescue::STATE_WIDTH, Rescue128};
+use winterfell::math::fields::f128::BaseElement;
 
 pub struct Chiplets {
     clk: usize,
-    sponge: [BaseElement; STATE_WIDTH],
+    sponge: Rescue128,
     op_bits_trace: [Vec<BaseElement>; 1],
     sponge_trace: [Vec<BaseElement>; STATE_WIDTH],
     trace_length: usize,
@@ -24,13 +21,11 @@ impl Chiplets {
 
         let op_bits_trace = [vec![ZERO; init_trace_length]];
 
-        let sponge = [BaseElement::ZERO; STATE_WIDTH];
-
         Chiplets {
             clk: 0,
-            sponge,
             sponge_trace,
             op_bits_trace,
+            sponge: Rescue128::new(),
             trace_length: init_trace_length,
         }
     }
@@ -87,12 +82,7 @@ impl Chiplets {
     }
 
     fn apply_hacc_round(&mut self, op: &Operation) {
-        if (self.clk - 1) % CYCLE_LENGTH < NUM_ROUNDS {
-            rescue::apply_round(&mut self.sponge, op.code(), op.value(), self.clk - 1);
-        } else {
-            self.sponge[2] = ZERO;
-            self.sponge[3] = ZERO;
-        }
+        self.sponge.update(op.code(), op.value());
 
         let hash_op = HashOperation::round();
 
@@ -102,7 +92,7 @@ impl Chiplets {
             _ => unreachable!(),
         };
 
-        for (col, state) in self.sponge.iter().enumerate() {
+        for (col, state) in self.sponge.state().iter().enumerate() {
             self.sponge_trace[col][self.clk] = *state;
         }
     }

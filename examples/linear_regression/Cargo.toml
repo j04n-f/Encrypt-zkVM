@@ -9,3 +9,4 @@ winterfell = { workspace = true }
 fhe = { path = "../../fhe" }
 vm = { path = "../../vm" }
 air = { path = "../../air" }
+crypto = { path = "../../crypto" }

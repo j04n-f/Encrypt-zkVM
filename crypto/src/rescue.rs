@@ -1,12 +1,5 @@
-// Copyright (c) Facebook, Inc. and its affiliates.
-//
-// This source code is licensed under the MIT license found in the
-// LICENSE file in the root directory of this source tree.
-
-use core::slice;
-
 use winterfell::{
-    crypto::{Digest, Hasher},
+    crypto::Digest,
     math::{fields::f128::BaseElement, FieldElement},
     ByteReader, ByteWriter, Deserializable, DeserializationError, Serializable,
 };
@@ -14,7 +7,7 @@ use winterfell::{
 pub const STATE_WIDTH: usize = 4;
 pub const RATE_WIDTH: usize = 2;
 
-const DIGEST_SIZE: usize = 2;
+pub const DIGEST_SIZE: usize = 2;
 
 pub const NUM_ROUNDS: usize = 14;
 
@@ -22,23 +15,17 @@ pub const CYCLE_LENGTH: usize = 16;
 
 pub struct Rescue128 {
     state: [BaseElement; STATE_WIDTH],
-    idx: usize,
+    step: usize,
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Default)]
 pub struct Hash([BaseElement; DIGEST_SIZE]);
 
-impl Default for Rescue128 {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl Rescue128 {
     pub fn new() -> Self {
         Rescue128 {
             state: [BaseElement::ZERO; STATE_WIDTH],
-            idx: 0,
+            step: 0,
         }
     }
 
@@ -46,60 +33,18 @@ impl Rescue128 {
         self.state
     }
 
-    pub fn update(&mut self, data: &[BaseElement]) {
-        for &element in data {
-            self.state[self.idx] += element;
-            self.idx += 1;
-            if self.idx % RATE_WIDTH == 0 {
-                apply_permutation(&mut self.state);
-                self.idx = 0;
-            }
+    pub fn update(&mut self, op_code: u8, op_value: u8) {
+        if self.step % CYCLE_LENGTH < NUM_ROUNDS {
+            apply_round(&mut self.state, op_code, op_value, self.step);
+        } else {
+            self.state[2] = BaseElement::ZERO;
+            self.state[3] = BaseElement::ZERO;
         }
+        self.step += 1;
     }
 
-    pub fn finalize(mut self) -> Hash {
-        if self.idx > 0 {
-            apply_permutation(&mut self.state);
-        }
+    pub fn hash(self) -> Hash {
         Hash([self.state[0], self.state[1]])
-    }
-
-    pub fn digest(data: &[BaseElement]) -> Hash {
-        let mut state = [BaseElement::ZERO; STATE_WIDTH];
-
-        let mut i = 0;
-        for &element in data.iter() {
-            state[i] += element;
-            i += 1;
-            if i % RATE_WIDTH == 0 {
-                apply_permutation(&mut state);
-                i = 0;
-            }
-        }
-
-        if i > 0 {
-            apply_permutation(&mut state);
-        }
-
-        Hash([state[0], state[1]])
-    }
-}
-
-impl Hasher for Rescue128 {
-    type Digest = Hash;
-
-    const COLLISION_RESISTANCE: u32 = 64;
-
-    fn hash(_bytes: &[u8]) -> Self::Digest {
-        unimplemented!("not implemented")
-    }
-
-    fn merge(values: &[Self::Digest; 2]) -> Self::Digest {
-        Self::digest(Hash::hashes_as_elements(values))
-    }
-
-    fn merge_with_int(_seed: Self::Digest, _value: u64) -> Self::Digest {
-        unimplemented!("not implemented")
     }
 }
 
@@ -117,12 +62,6 @@ impl Hash {
 
     pub fn to_elements(&self) -> [BaseElement; DIGEST_SIZE] {
         self.0
-    }
-
-    pub fn hashes_as_elements(hashes: &[Hash]) -> &[BaseElement] {
-        let p = hashes.as_ptr();
-        let len = hashes.len() * DIGEST_SIZE;
-        unsafe { slice::from_raw_parts(p as *const BaseElement, len) }
     }
 }
 
@@ -150,12 +89,6 @@ impl Deserializable for Hash {
     }
 }
 
-pub fn apply_permutation(state: &mut [BaseElement; STATE_WIDTH]) {
-    for i in 0..NUM_ROUNDS {
-        // apply_round(state, i);
-    }
-}
-
 pub fn apply_round(state: &mut [BaseElement], op_code: u8, op_value: u8, step: usize) {
     // determine which round constants to use
     let ark = ARK[step % CYCLE_LENGTH];
@@ -174,10 +107,6 @@ pub fn apply_round(state: &mut [BaseElement], op_code: u8, op_value: u8, step: u
     add_constants(state, &ark, STATE_WIDTH);
 }
 
-// ROUND CONSTANTS
-// ================================================================================================
-
-/// Returns Rescue round constants arranged in column-major form.
 pub fn get_round_constants() -> Vec<Vec<BaseElement>> {
     let mut constants = Vec::new();
     for _ in 0..(STATE_WIDTH * 2) {
@@ -193,9 +122,6 @@ pub fn get_round_constants() -> Vec<Vec<BaseElement>> {
 
     constants
 }
-
-// HELPER FUNCTIONS
-// ================================================================================================
 
 #[inline(always)]
 #[allow(clippy::needless_range_loop)]
@@ -440,12 +366,3 @@ pub const ARK: [[BaseElement; STATE_WIDTH * 2]; CYCLE_LENGTH] = [
     [BaseElement::ZERO; 8],
     [BaseElement::ZERO; 8],
 ];
-
-#[test]
-fn test() {
-    let mut state0 = vec![BaseElement::ZERO; 4];
-
-    apply_round(&mut state0,0u8, 0u8, 0);
-
-    println!("{:?}", state0);
-}
