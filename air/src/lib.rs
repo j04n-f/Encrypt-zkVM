@@ -5,7 +5,7 @@ use winterfell::{
 
 use crypto::{
     rescue,
-    rescue::{CYCLE_LENGTH, STATE_WIDTH, DIGEST_SIZE},
+    rescue::{CYCLE_LENGTH, DIGEST_SIZE, STATE_WIDTH},
 };
 
 pub struct PublicInputs {
@@ -15,7 +15,10 @@ pub struct PublicInputs {
 
 impl PublicInputs {
     pub fn new(program_hash: [BaseElement; DIGEST_SIZE], stack_outputs: Vec<BaseElement>) -> PublicInputs {
-        PublicInputs { program_hash, stack_outputs }
+        PublicInputs {
+            program_hash,
+            stack_outputs,
+        }
     }
 }
 
@@ -136,7 +139,7 @@ impl Air for ProcessorAir {
         }
 
         step0[0] += b0 * E::from(4u8) + b1 * E::from(2u8) + b2;
-        step0[1] += E::from(frame.next()[10]) * push_flag;
+        step0[1] += frame.next()[10] * push_flag;
 
         let mut step1 = frame.next()[5..9].to_vec();
         for i in 0..STATE_WIDTH {

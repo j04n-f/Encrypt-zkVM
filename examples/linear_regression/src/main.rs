@@ -1,16 +1,19 @@
-use std::{io::Cursor, path::Path};
+use std::path::Path;
 
 use fhe::{FheUInt8, LweParameters, ServerKey};
 
 use vm::{Program, ProgramInputs};
 
 use winterfell::{
-    crypto::{hashers::Blake3_256, DefaultRandomCoin}, math::fields::f128::BaseElement, verify, AcceptableOptions, Deserializable, Proof
+    crypto::{hashers::Blake3_256, DefaultRandomCoin},
+    math::fields::f128::BaseElement,
+    verify, AcceptableOptions, Deserializable, Serializable,
 };
 
 use air::{ProcessorAir, PublicInputs};
 
-use crypto::rescue::Hash;
+mod utils;
+use utils::{InputData, OutputData};
 
 type Blake3 = Blake3_256<BaseElement>;
 
@@ -21,7 +24,7 @@ fn main() {
     let clear_x = 33u8;
 
     // Client
-    let (serialized_data, client_key) = {
+    let (input_data, client_key) = {
         let plaintext_modulus: u32 = 8u32; // p
         let ciphertext_modulus: u32 = 128u32; // q
         let k: usize = 4; // This is the number of mask elements
@@ -32,48 +35,34 @@ fn main() {
 
         let x = client_key.encrypt(clear_x);
 
-        let mut serialized_data = Vec::new();
-        bincode::serialize_into(&mut serialized_data, &[a, b]).unwrap();
-        bincode::serialize_into(&mut serialized_data, &[x]).unwrap();
-        bincode::serialize_into(&mut serialized_data, &client_key).unwrap();
+        let data = InputData::new(&[a, b], &[x], &client_key);
 
-        (serialized_data, client_key)
+        (data.to_bytes(), client_key)
     };
 
     // Server
-    let serialized_outputs = {
-        let mut inputs = Cursor::new(serialized_data);
-
-        let public_inputs: [u8; 2] = bincode::deserialize_from(&mut inputs).unwrap();
-        let secret_inputs: [FheUInt8; 1] = bincode::deserialize_from(&mut inputs).unwrap();
-        let server_key: ServerKey = bincode::deserialize_from(&mut inputs).unwrap();
+    let output_data = {
+        let payload = InputData::read_from_bytes(&input_data).unwrap();
 
         let path = Path::new("lr.txt");
 
         let program = Program::load(path).unwrap();
 
-        let inputs = ProgramInputs::new(&public_inputs, &secret_inputs, server_key);
+        let inputs = ProgramInputs::new(payload.public_inputs(), payload.secret_inputs(), payload.server_key());
 
         let (hash, output, proof) = vm::prove(program, inputs).unwrap();
 
-        let mut serialized_outputs = Vec::new();
-        bincode::serialize_into(&mut serialized_outputs, &output).unwrap();
-        bincode::serialize_into(&mut serialized_outputs, &hash.to_bytes()).unwrap();
-        bincode::serialize_into(&mut serialized_outputs, &proof.to_bytes()).unwrap();
+        let output = OutputData::new(hash, proof, &output);
 
-        serialized_outputs
+        output.to_bytes()
     };
 
     // Client
-    let mut outputs = Cursor::new(serialized_outputs);
-    let output: Vec<u128> = bincode::deserialize_from(&mut outputs).unwrap();
-    let b_hash: [u8; 32] = bincode::deserialize_from(&mut outputs).unwrap();
-    let b_proof: Vec<u8> = bincode::deserialize_from(&mut outputs).unwrap();
+    let results = OutputData::read_from_bytes(&output_data).unwrap();
 
-    let result = FheUInt8::new(&output);
+    println!("{:?}", &results.output());
 
-    let hash = Hash::read_from_bytes(&b_hash).unwrap();
-    let proof = Proof::from_bytes(&b_proof).unwrap();
+    let result = FheUInt8::new(&results.output()[..5]);
 
     let _clear_result = client_key.decrypt(&result);
 
@@ -82,14 +71,8 @@ fn main() {
     let min_opts = AcceptableOptions::MinConjecturedSecurity(95);
 
     verify::<ProcessorAir, Blake3, DefaultRandomCoin<Blake3>>(
-        proof,
-        PublicInputs::new(
-            hash.to_elements(),
-            output
-                .iter()
-                .map(|value| BaseElement::try_from(*value).unwrap())
-                .collect::<Vec<BaseElement>>(),
-        ),
+        results.proof().clone(),
+        PublicInputs::new(results.hash().to_elements(), results.output().to_vec()),
         &min_opts,
     )
     .unwrap()

@@ -4,10 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-serde = { version = "1.0", features = ["derive"] }
 rand_distr = "0.4"
 rand = { workspace = true }
-bincode = { workspace = true }
+winterfell = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }

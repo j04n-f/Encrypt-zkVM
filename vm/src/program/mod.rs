@@ -1,6 +1,6 @@
 use std::{fs, path::Path};
 
-use crate::processor::{OpCode, OpValue, Operation};
+use crate::processor::{OpCode, Operation};
 
 mod errors;
 use crypto::{

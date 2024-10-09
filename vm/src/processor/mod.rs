@@ -1,7 +1,7 @@
 use crate::program::{Program, ProgramInputs};
 
 pub mod opcodes;
-pub use opcodes::{HashOperation, OpCode, OpValue, Operation};
+pub use opcodes::{HashOperation, OpCode, Operation};
 
 mod stack;
 use stack::Stack;
@@ -75,18 +75,7 @@ impl Processor {
         trace.extend(self.system.into_trace(trace_length));
         trace.extend(self.decoder.into_trace(trace_length));
         trace.extend(self.chiplets.into_trace(trace_length));
-        trace.extend(
-            self.stack
-                .into_trace(trace_length)
-                .iter()
-                .map(|trace| {
-                    trace
-                        .iter()
-                        .map(|value| BaseElement::try_from(*value).unwrap())
-                        .collect::<Vec<BaseElement>>()
-                })
-                .collect::<Vec<Vec<BaseElement>>>(),
-        );
+        trace.extend(self.stack.into_trace(trace_length));
 
         let mut rng = rand::thread_rng();
 
@@ -99,7 +88,7 @@ impl Processor {
         trace
     }
 
-    pub fn get_stack_output(&self) -> Vec<u128> {
+    pub fn get_stack_output(&self) -> Vec<BaseElement> {
         // trace computation does not change the clock value
         // clock value is always set to the last stack row
         self.stack.current_state()

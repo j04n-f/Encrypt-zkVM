@@ -22,9 +22,9 @@ impl Decoder {
         }
     }
 
-    pub fn trace_length(&self) -> usize {
-        self.trace_length
-    }
+    // pub fn trace_length(&self) -> usize {
+    //     self.trace_length
+    // }
 
     #[cfg(test)]
     pub fn decoder_bits_state(&self, clk: usize) -> Vec<BaseElement> {

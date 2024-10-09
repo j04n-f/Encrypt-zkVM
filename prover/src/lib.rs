@@ -20,8 +20,12 @@ pub struct ExecutionProver {
 }
 
 impl ExecutionProver {
-    pub fn new(options: ProofOptions, program_hash: [BaseElement; 2], stack_outputs: Vec<BaseElement>) -> Self {
-        Self { options, stack_outputs,  program_hash}
+    pub fn new(options: ProofOptions, program_hash: [BaseElement; 2], stack_outputs: &[BaseElement]) -> Self {
+        Self {
+            options,
+            stack_outputs: stack_outputs.to_vec(),
+            program_hash,
+        }
     }
 }
 

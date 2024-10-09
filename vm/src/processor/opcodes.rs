@@ -19,10 +19,6 @@ impl HashOperation {
         self.hash_code as u8
     }
 
-    pub fn hash_code(&self) -> HashCode {
-        self.hash_code
-    }
-
     pub fn round() -> HashOperation {
         HashOperation::new(HashCode::Round)
     }

@@ -1,5 +1,5 @@
 use super::errors::ProgramError;
-use super::{OpCode, OpValue, Operation};
+use super::Operation;
 
 pub fn parse_push(op: &[&str], step: usize) -> Result<Operation, ProgramError> {
     if op.len() == 1 {

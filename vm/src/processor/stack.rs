@@ -1,15 +1,19 @@
 use super::ProgramInputs;
 use super::StackError;
-use super::{OpCode, Operation};
+use super::{OpCode, Operation, ZERO};
 
 use fhe::{FheUInt8, ServerKey};
+
+use winterfell::math::fields::f128::BaseElement;
+
+use std::ops::{Add, Mul};
 
 use super::MAX_STACK_DEPTH;
 
 pub struct Stack {
     clk: usize,
-    registers: Vec<Vec<u128>>,
-    helpers: Vec<Vec<u128>>,
+    registers: Vec<Vec<BaseElement>>,
+    helpers: Vec<Vec<BaseElement>>,
     tape_a: Vec<u8>,
     tape_b: Vec<FheUInt8>,
     depth: usize,
@@ -19,9 +23,9 @@ pub struct Stack {
 
 impl Stack {
     pub fn new(inputs: &ProgramInputs, init_trace_length: usize) -> Stack {
-        let registers: Vec<Vec<u128>> = (0..MAX_STACK_DEPTH).map(|_| vec![0; init_trace_length]).collect();
+        let registers: Vec<Vec<BaseElement>> = (0..MAX_STACK_DEPTH).map(|_| vec![ZERO; init_trace_length]).collect();
 
-        let helpers: Vec<Vec<u128>> = (0..1).map(|_| vec![0; init_trace_length]).collect();
+        let helpers: Vec<Vec<BaseElement>> = (0..1).map(|_| vec![ZERO; init_trace_length]).collect();
 
         // reverse inputs to pop them in order
         let mut tape_a = inputs.get_public();
@@ -64,12 +68,12 @@ impl Stack {
         Ok(())
     }
 
-    pub fn trace_length(&self) -> usize {
-        self.trace_length
-    }
+    // pub fn trace_length(&self) -> usize {
+    //     self.trace_length
+    // }
 
     #[cfg(test)]
-    pub fn stack_state(&self, clk: usize) -> Vec<u128> {
+    pub fn stack_state(&self, clk: usize) -> Vec<BaseElement> {
         let mut state = Vec::with_capacity(self.registers.len());
         for i in 0..self.registers.len() {
             state.push(self.registers[i][clk]);
@@ -78,7 +82,7 @@ impl Stack {
     }
 
     #[cfg(test)]
-    pub fn helpers_state(&self, clk: usize) -> Vec<u128> {
+    pub fn helpers_state(&self, clk: usize) -> Vec<BaseElement> {
         let mut state = Vec::with_capacity(self.helpers.len());
         for i in 0..self.helpers.len() {
             state.push(self.helpers[i][clk]);
@@ -86,7 +90,7 @@ impl Stack {
         state
     }
 
-    pub fn current_state(&self) -> Vec<u128> {
+    pub fn current_state(&self) -> Vec<BaseElement> {
         let mut state = Vec::with_capacity(self.registers.len());
         for i in 0..self.registers.len() {
             state.push(self.registers[i][self.clk]);
@@ -94,16 +98,16 @@ impl Stack {
         state
     }
 
-    pub fn into_trace(mut self, trace_length: usize) -> Vec<Vec<u128>> {
+    pub fn into_trace(mut self, trace_length: usize) -> Vec<Vec<BaseElement>> {
         let mut trace = Vec::new();
 
         for col in self.registers.iter_mut() {
-            col.resize(self.clk + 1, 0);
+            col.resize(self.clk + 1, ZERO);
             col.resize(trace_length, col[self.clk]);
         }
 
         for col in self.helpers.iter_mut() {
-            col.resize(self.clk + 1, 0);
+            col.resize(self.clk + 1, ZERO);
             col.resize(trace_length, col[self.clk]);
         }
 
@@ -122,7 +126,7 @@ impl Stack {
 
     fn op_push(&mut self, value: u8) -> Result<(), StackError> {
         self.shift_right("push", 0, 1)?;
-        self.registers[0][self.clk] = value as u128;
+        self.registers[0][self.clk] = BaseElement::from(value);
         Ok(())
     }
 
@@ -132,13 +136,13 @@ impl Stack {
             Some(value) => value,
             None => return Err(StackError::empty_inputs(self.clk)),
         };
-        self.registers[0][self.clk] = value as u128;
+        self.registers[0][self.clk] = BaseElement::from(value);
         Ok(())
     }
 
     fn op_read2(&mut self) -> Result<(), StackError> {
         let ct = match self.tape_b.pop() {
-            Some(value) => value.ciphertext(),
+            Some(value) => value.ciphertext().to_vec(),
             None => return Err(StackError::empty_inputs(self.clk)),
         };
         self.shift_right("read2", 0, ct.len())?;
@@ -157,7 +161,7 @@ impl Stack {
 
         let x = self.registers[0][self.clk - 1];
         let y = self.registers[1][self.clk - 1];
-        self.registers[0][self.clk] = x.wrapping_add(y);
+        self.registers[0][self.clk] = x.add(y);
         self.shift_left(op, 2, 1)
     }
 
@@ -168,10 +172,11 @@ impl Stack {
             return Err(StackError::stack_underflow(op, self.clk));
         }
 
-        let ct: Vec<u128> = (1..=self.server_key.lwe_size())
+        let ct: Vec<BaseElement> = (1..=self.server_key.lwe_size())
             .map(|i: usize| self.registers[i][self.clk - 1])
             .collect();
-        let scalar = self.registers[0][self.clk - 1] as u8;
+
+        let scalar = self.registers[0][self.clk - 1];
 
         let result_ct = self.server_key.scalar_add(&scalar, &FheUInt8::new(&ct));
 
@@ -190,7 +195,7 @@ impl Stack {
         }
         let x = self.registers[0][self.clk - 1];
         let y = self.registers[1][self.clk - 1];
-        self.registers[0][self.clk] = x.wrapping_mul(y);
+        self.registers[0][self.clk] = x.mul(y);
         self.shift_left(op, 2, 1)
     }
 
@@ -201,11 +206,11 @@ impl Stack {
             return Err(StackError::stack_underflow(op, self.clk));
         }
 
-        let ct: Vec<u128> = (1..=self.server_key.lwe_size())
+        let ct: Vec<BaseElement> = (1..=self.server_key.lwe_size())
             .map(|i: usize| self.registers[i][self.clk - 1])
             .collect();
 
-        let scalar = self.registers[0][self.clk - 1] as u8;
+        let scalar = self.registers[0][self.clk - 1];
 
         let result_ct = self.server_key.scalar_mul(&scalar, &FheUInt8::new(&ct));
 
@@ -228,7 +233,7 @@ impl Stack {
 
         // set all "shifted-in" slots to 0
         for i in (self.depth - pos_count)..self.depth {
-            self.registers[i][self.clk] = 0;
+            self.registers[i][self.clk] = ZERO;
         }
 
         // stack depth has been reduced by pos_count
@@ -261,10 +266,10 @@ impl Stack {
         if self.clk >= self.trace_length {
             self.trace_length *= 2;
             for col in self.registers.iter_mut() {
-                col.resize(self.trace_length, 0);
+                col.resize(self.trace_length, ZERO);
             }
             for col in self.helpers.iter_mut() {
-                col.resize(self.trace_length, 0);
+                col.resize(self.trace_length, ZERO);
             }
         }
     }
@@ -275,6 +280,6 @@ impl Stack {
     }
 
     fn set_helpers(&mut self) {
-        self.helpers[0][self.clk] = self.depth as u128;
+        self.helpers[0][self.clk] = BaseElement::from(self.depth as u32);
     }
 }

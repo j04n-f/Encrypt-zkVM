@@ -86,7 +86,7 @@ impl Chiplets {
 
         let hash_op = HashOperation::round();
 
-        self.op_bits_trace[0][self.clk - 1] = match hash_op.code() >> 0 & 1 {
+        self.op_bits_trace[0][self.clk - 1] = match hash_op.code() & 1 {
             0 => ZERO,
             1 => ONE,
             _ => unreachable!(),

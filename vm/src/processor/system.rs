@@ -1,5 +1,5 @@
 use super::{ONE, ZERO};
-use winterfell::math::{fields::f128::BaseElement};
+use winterfell::math::fields::f128::BaseElement;
 pub struct System {
     clk: usize,
     clk_trace: Vec<BaseElement>,

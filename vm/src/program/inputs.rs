@@ -9,11 +9,11 @@ pub struct ProgramInputs {
 
 impl ProgramInputs {
     /// Returns `ProgramInputs` initialized with the provided public and secret inputs.
-    pub fn new(public: &[u8], secret: &[FheUInt8], server_key: ServerKey) -> ProgramInputs {
+    pub fn new(public: &[u8], secret: &[FheUInt8], server_key: &ServerKey) -> ProgramInputs {
         ProgramInputs {
             public: public.to_vec(),
             secret: secret.to_vec(),
-            server_key,
+            server_key: server_key.clone(),
         }
     }
 
