@@ -3,13 +3,14 @@ use winterfell::math::fields::f128::BaseElement;
 
 pub struct Decoder {
     clk: usize,
-    op_bits_trace: [Vec<BaseElement>; 3],
+    op_bits_trace: [Vec<BaseElement>; 4],
     trace_length: usize,
 }
 
 impl Decoder {
     pub fn new(init_trace_length: usize) -> Decoder {
         let op_bits_trace = [
+            vec![ZERO; init_trace_length],
             vec![ZERO; init_trace_length],
             vec![ZERO; init_trace_length],
             vec![ZERO; init_trace_length],
@@ -43,10 +44,11 @@ impl Decoder {
 
         let mut registers: Vec<Vec<BaseElement>> = Vec::new();
 
-        let [b0, b1, b2] = self.op_bits_trace;
+        let [b0, b1, b2, b3] = self.op_bits_trace;
         registers.push(b0);
         registers.push(b1);
         registers.push(b2);
+        registers.push(b3);
 
         registers
     }
@@ -71,7 +73,7 @@ impl Decoder {
     }
 
     fn decode_op_bits(&mut self, op: &Operation) {
-        for i in 0..3 {
+        for i in 0..4 {
             self.op_bits_trace[i][self.clk - 1] = match op.code() >> i & 1 {
                 0 => ZERO,
                 1 => ONE,

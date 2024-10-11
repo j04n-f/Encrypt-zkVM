@@ -1,3 +1,4 @@
+use fhe::ServerKey;
 use winterfell::{
     crypto::{hashers::Blake3_256, DefaultRandomCoin},
     math::{fields::f128::BaseElement, FieldElement},
@@ -17,14 +18,21 @@ pub struct ExecutionProver {
     options: ProofOptions,
     program_hash: [BaseElement; 2],
     stack_outputs: Vec<BaseElement>,
+    server_key: ServerKey,
 }
 
 impl ExecutionProver {
-    pub fn new(options: ProofOptions, program_hash: [BaseElement; 2], stack_outputs: &[BaseElement]) -> Self {
+    pub fn new(
+        options: ProofOptions,
+        program_hash: [BaseElement; 2],
+        stack_outputs: &[BaseElement],
+        server_key: ServerKey,
+    ) -> Self {
         Self {
             options,
             stack_outputs: stack_outputs.to_vec(),
             program_hash,
+            server_key,
         }
     }
 }
@@ -40,7 +48,7 @@ impl Prover for ExecutionProver {
         DefaultConstraintEvaluator<'a, ProcessorAir, E>;
 
     fn get_pub_inputs(&self, _trace: &Self::Trace) -> PublicInputs {
-        PublicInputs::new(self.program_hash, self.stack_outputs.clone())
+        PublicInputs::new(self.program_hash, self.stack_outputs.clone(), self.server_key.clone())
     }
 
     // We'll use the default trace low-degree extension.

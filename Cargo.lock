@@ -7,6 +7,7 @@ name = "air"
 version = "0.1.0"
 dependencies = [
  "crypto",
+ "fhe",
  "winterfell",
 ]
 
@@ -259,6 +260,7 @@ name = "prover"
 version = "0.1.0"
 dependencies = [
  "air",
+ "fhe",
  "winterfell",
 ]
 

@@ -2,16 +2,17 @@ use rand::Rng;
 use rand_distr::{Distribution, Normal};
 use winterfell::math::{FieldElement, StarkField};
 
+use super::integer::{FheElement, FheUInt8};
+
 use super::{Export, Import};
 
-use super::FheUInt8;
-use super::LweParameters;
+use super::parameters::LweParameters;
 
 use winterfell::{
     math::fields::f128::BaseElement, ByteReader, ByteWriter, Deserializable, DeserializationError, Serializable,
 };
 
-use std::ops::{Add, Mul};
+use std::ops::Mul;
 
 #[derive(Clone)]
 pub struct ServerKey {
@@ -37,8 +38,8 @@ impl ServerKey {
             .collect()
     }
 
-    fn generate_trivial_mask(&self) -> Vec<BaseElement> {
-        (0..self.parameters.k).map(|_| BaseElement::ZERO).collect()
+    fn generate_trivial_mask<E: FieldElement>(&self) -> Vec<E> {
+        (0..self.parameters.k).map(|_| E::ZERO).collect()
     }
 
     pub fn encrypt(&self, value: u8) -> FheUInt8 {
@@ -68,8 +69,8 @@ impl ServerKey {
         let ciphertext = value.ciphertext().to_vec();
         let mut applied_mask = BaseElement::ZERO;
 
-        for i in 0..self.parameters.k {
-            applied_mask += ciphertext[i] * self.key[i];
+        for (i, ct) in ciphertext.iter().enumerate().take(self.parameters.k) {
+            applied_mask += *ct * self.key[i];
         }
 
         let decrypted_message = ciphertext[self.parameters.k] - applied_mask;
@@ -78,35 +79,35 @@ impl ServerKey {
         ((decrypted_message.as_int() >> log2_delta) + round_bit) as u8
     }
 
-    pub fn encrypt_trivial(&self, message: &BaseElement) -> FheUInt8 {
+    pub fn encrypt_trivial<E: FieldElement + From<BaseElement>>(&self, message: &E) -> FheElement<E> {
         let mut ciphertext = self.generate_trivial_mask();
-        let body = BaseElement::from(self.parameters.delta).mul(*message);
+        let body = E::from(self.parameters.delta).mul(*message);
         ciphertext.push(body);
-        FheUInt8::new(&ciphertext)
+        FheElement::new(&ciphertext)
     }
 
     pub fn lwe_size(&self) -> usize {
         self.parameters.k + 1
     }
 
-    pub fn scalar_add(&self, scalar: &BaseElement, value: &FheUInt8) -> FheUInt8 {
+    pub fn scalar_add<E: FieldElement + From<BaseElement>>(&self, scalar: &E, value: &FheElement<E>) -> FheElement<E> {
         let trivial_scalar = self.encrypt_trivial(scalar);
         let trivial_ct = trivial_scalar.ciphertext();
         let mut ciphertext = value.ciphertext().to_vec();
         for i in 0..self.lwe_size() {
             ciphertext[i] = ciphertext[i].add(trivial_ct[i]);
         }
-        FheUInt8::new(&ciphertext)
+        FheElement::new(&ciphertext)
     }
 
-    pub fn scalar_mul(&self, scalar: &BaseElement, value: &FheUInt8) -> FheUInt8 {
+    pub fn scalar_mul<E: FieldElement>(&self, scalar: &E, value: &FheElement<E>) -> FheElement<E> {
         let ciphertext = value.ciphertext();
-        FheUInt8::new(
+        FheElement::new(
             &ciphertext
                 .iter()
                 .take(self.lwe_size())
-                .map(|value| value.mul(*scalar))
-                .collect::<Vec<BaseElement>>(),
+                .map(|value| *value * *scalar)
+                .collect::<Vec<E>>(),
         )
     }
 

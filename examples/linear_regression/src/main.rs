@@ -18,10 +18,16 @@ use utils::{InputData, OutputData};
 type Blake3 = Blake3_256<BaseElement>;
 
 fn main() {
-    let a = 2u8;
-    let b = 12u8;
+    let b0 = 1u8;
+    let b1 = 3u8;
+    let b2 = 2u8;
+    let b3 = 4u8;
+    let b4 = 2u8;
 
-    let clear_x = 33u8;
+    let clear_x1 = 2u8;
+    let clear_x2 = 3u8;
+    let clear_x3 = 3u8;
+    let clear_x4 = 2u8;
 
     // Client
     let (input_data, client_key) = {
@@ -33,9 +39,12 @@ fn main() {
 
         let client_key = ServerKey::new(parameters);
 
-        let x = client_key.encrypt(clear_x);
+        let x1 = client_key.encrypt(clear_x1);
+        let x2 = client_key.encrypt(clear_x2);
+        let x3 = client_key.encrypt(clear_x3);
+        let x4 = client_key.encrypt(clear_x4);
 
-        let data = InputData::new(&[a, b], &[x], &client_key);
+        let data = InputData::new(&[b0, b1, b2, b3, b4], &[x1, x2, x3, x4], &client_key);
 
         (data.to_bytes(), client_key)
     };
@@ -60,19 +69,20 @@ fn main() {
     // Client
     let results = OutputData::read_from_bytes(&output_data).unwrap();
 
-    println!("{:?}", &results.output());
-
     let result = FheUInt8::new(&results.output()[..5]);
 
-    let _clear_result = client_key.decrypt(&result);
+    let clear_result = client_key.decrypt(&result);
 
-    // assert_eq!(a * clear_x + b, clear_result);
+    assert_eq!(
+        b0 + b1 * clear_x1 + b2 * clear_x2 + b3 * clear_x3 + b4 * clear_x4,
+        clear_result
+    );
 
     let min_opts = AcceptableOptions::MinConjecturedSecurity(95);
 
     verify::<ProcessorAir, Blake3, DefaultRandomCoin<Blake3>>(
         results.proof().clone(),
-        PublicInputs::new(results.hash().to_elements(), results.output().to_vec()),
+        PublicInputs::new(results.hash().to_elements(), results.output().to_vec(), client_key),
         &min_opts,
     )
     .unwrap()

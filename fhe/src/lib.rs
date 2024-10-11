@@ -5,7 +5,7 @@ mod server_key;
 pub use server_key::ServerKey;
 
 mod integer;
-pub use integer::FheUInt8;
+pub use integer::{FheElement, FheUInt8};
 
 #[cfg(test)]
 mod tests;
