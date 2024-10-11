@@ -1,18 +1,14 @@
 use rand::Rng;
 use rand_distr::{Distribution, Normal};
+use std::ops::Mul;
 use winterfell::math::{FieldElement, StarkField};
-
-use super::integer::{FheElement, FheUInt8};
-
-use super::{Export, Import};
-
-use super::parameters::LweParameters;
-
 use winterfell::{
     math::fields::f128::BaseElement, ByteReader, ByteWriter, Deserializable, DeserializationError, Serializable,
 };
 
-use std::ops::Mul;
+use super::integer::{FheElement, FheUInt8};
+use super::parameters::LweParameters;
+use super::{Export, Import};
 
 #[derive(Clone)]
 pub struct ServerKey {
@@ -90,25 +86,41 @@ impl ServerKey {
         self.parameters.k + 1
     }
 
-    pub fn scalar_add<E: FieldElement + From<BaseElement>>(&self, scalar: &E, value: &FheElement<E>) -> FheElement<E> {
-        let trivial_scalar = self.encrypt_trivial(scalar);
-        let trivial_ct = trivial_scalar.ciphertext();
-        let mut ciphertext = value.ciphertext().to_vec();
-        for i in 0..self.lwe_size() {
-            ciphertext[i] = ciphertext[i].add(trivial_ct[i]);
-        }
+    pub fn add<E: FieldElement + From<BaseElement>>(
+        &self,
+        value0: &FheElement<E>,
+        value1: &FheElement<E>,
+    ) -> FheElement<E> {
+        let ciphertext = value0
+            .ciphertext()
+            .iter()
+            .zip(value1.ciphertext().iter())
+            .take(self.lwe_size())
+            .map(|(ct_value0, ct_value1)| ct_value0.add(*ct_value1))
+            .collect::<Vec<E>>();
         FheElement::new(&ciphertext)
     }
 
-    pub fn scalar_mul<E: FieldElement>(&self, scalar: &E, value: &FheElement<E>) -> FheElement<E> {
-        let ciphertext = value.ciphertext();
-        FheElement::new(
-            &ciphertext
-                .iter()
-                .take(self.lwe_size())
-                .map(|value| *value * *scalar)
-                .collect::<Vec<E>>(),
-        )
+    pub fn scalar_add<E: FieldElement + From<BaseElement>>(&self, scalar: &E, value: &FheElement<E>) -> FheElement<E> {
+        let trivial_scalar = self.encrypt_trivial(scalar);
+        let ciphertext = value
+            .ciphertext()
+            .iter()
+            .zip(trivial_scalar.ciphertext().iter())
+            .take(self.lwe_size())
+            .map(|(ct_value, ct_trivial)| ct_value.add(*ct_trivial))
+            .collect::<Vec<E>>();
+        FheElement::new(&ciphertext)
+    }
+
+    pub fn scalar_mul<E: FieldElement + Clone>(&self, scalar: &E, value: &FheElement<E>) -> FheElement<E> {
+        let ciphertext = value
+            .ciphertext()
+            .iter()
+            .take(self.lwe_size())
+            .map(|ct_value| *ct_value * *scalar)
+            .collect::<Vec<E>>();
+        FheElement::new(&ciphertext)
     }
 
     pub fn key(&self) -> &[BaseElement] {

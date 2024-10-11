@@ -1,5 +1,6 @@
 use winterfell::{ByteReader, ByteWriter, Deserializable, DeserializationError, Serializable};
-#[derive(Clone)]
+
+#[derive(Clone, PartialEq)]
 pub struct LweParameters {
     pub plaintext_modulus: u32,
     pub ciphertext_modulus: u32,

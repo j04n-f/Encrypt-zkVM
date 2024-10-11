@@ -1,3 +1,9 @@
+use std::error;
+use std::io::{Read, Write};
+use std::path::Path;
+use std::{fs::File, io::Cursor};
+use winterfell::{Deserializable, Serializable};
+
 mod parameters;
 pub use parameters::LweParameters;
 
@@ -9,14 +15,6 @@ pub use integer::{FheElement, FheUInt8};
 
 #[cfg(test)]
 mod tests;
-
-use std::io::{Read, Write};
-use std::path::Path;
-use std::{fs::File, io::Cursor};
-
-use std::error;
-
-use winterfell::{Deserializable, Serializable};
 
 pub struct Error {
     message: String,

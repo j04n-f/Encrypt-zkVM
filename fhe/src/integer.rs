@@ -1,13 +1,13 @@
-use super::{Export, Import};
-
 use winterfell::{
     math::{fields::f128::BaseElement, FieldElement},
     ByteReader, ByteWriter, Deserializable, DeserializationError, Serializable,
 };
 
+use super::{Export, Import};
+
 pub type FheUInt8 = FheElement<BaseElement>;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct FheElement<E>
 where
     E: FieldElement,
