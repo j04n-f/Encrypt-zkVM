@@ -52,6 +52,8 @@ impl Program {
                 code.resize(code.len() + pad_length, Operation::noop());
             }
 
+            // add NOOP codes when CYCLE_LENGTH >= NUM_ROUNDS
+            // to reset the capacity elements to 0
             if code.len() % CYCLE_LENGTH >= NUM_ROUNDS {
                 let padded_length = compute_padding(code.len());
                 code.resize(padded_length, Operation::noop());
@@ -60,6 +62,7 @@ impl Program {
             code.push(op);
         }
 
+        // pad the program length with NOOP codes to match the RescuePrime cycle length
         let padded_length = compute_padding(code.len());
         code.resize(padded_length, Operation::noop());
 
@@ -99,7 +102,7 @@ fn parse_op(step: usize, line: &str) -> Result<Operation, ProgramError> {
 }
 
 fn compute_padding(length: usize) -> usize {
-    length + (CYCLE_LENGTH - (length % CYCLE_LENGTH) - 1)
+    length + (CYCLE_LENGTH - (length % CYCLE_LENGTH))
 }
 
 impl std::fmt::Display for Program {

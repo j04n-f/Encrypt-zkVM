@@ -77,7 +77,7 @@ impl std::fmt::Debug for OpCode {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum OpValue {
     Push(u8),
     None,
@@ -110,7 +110,7 @@ impl std::fmt::Debug for OpValue {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub struct Operation {
     op_code: OpCode,
     op_value: OpValue,

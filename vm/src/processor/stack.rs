@@ -28,9 +28,9 @@ impl Stack {
         let helpers: Vec<Vec<BaseElement>> = (0..1).map(|_| vec![ZERO; init_trace_length]).collect();
 
         // reverse inputs to pop them in order
-        let mut tape_a = inputs.get_public();
+        let mut tape_a = inputs.get_public().to_vec();
         tape_a.reverse();
-        let mut tape_b = inputs.get_secret();
+        let mut tape_b = inputs.get_secret().to_vec();
         tape_b.reverse();
 
         Stack {

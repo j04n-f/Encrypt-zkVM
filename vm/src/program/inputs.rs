@@ -17,12 +17,12 @@ impl ProgramInputs {
         }
     }
 
-    pub fn get_public(&self) -> Vec<u8> {
-        self.public.clone()
+    pub fn get_public(&self) -> &[u8] {
+        &self.public
     }
 
-    pub fn get_secret(&self) -> Vec<FheUInt8> {
-        self.secret.clone()
+    pub fn get_secret(&self) -> &[FheUInt8] {
+        &self.secret
     }
 
     pub fn get_server_key(&self) -> ServerKey {
