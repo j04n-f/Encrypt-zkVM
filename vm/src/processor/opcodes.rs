@@ -28,17 +28,17 @@ impl HashOperation {
 #[derive(Copy, Clone, PartialEq)]
 #[repr(u8)]
 pub enum OpCode {
-    Noop  = 0b0000,
+    Noop  = 0b00_000,
 
-    Push  = 0b1010,    // shift-right: 1
-    Read  = 0b1011,    // shift-right: 1
+    Push  = 0b10_000,    // shift-right: 1
+    Read  = 0b10_001,    // shift-right: 1
 
-    Read2 = 0b1111,    // shift-right: 5
+    Read2 = 0b10_010,    // shift-right: 5
 
-    Add   = 0b1001,    // shift-left: 1
-    Mul   = 0b1000,    // shift-left: 1
-    SAdd  = 0b1101,    // shift-left: 1
-    SMul  = 0b1100,    // shift-left: 1
+    Add   = 0b01_000,    // shift-left: 1
+    Mul   = 0b01_001,    // shift-left: 1
+    SAdd  = 0b01_010,    // shift-left: 1
+    SMul  = 0b01_100,    // shift-left: 1
 }
 
 impl std::fmt::Display for OpCode {
@@ -52,7 +52,7 @@ impl std::fmt::Display for OpCode {
             OpCode::Read2              => write!(f, "read2"),
 
             OpCode::Add                => write!(f, "add"),
-            OpCode::SAdd               => write!(f, "smul"),
+            OpCode::SAdd               => write!(f, "sadd"),
             OpCode::Mul                => write!(f, "mul"),
             OpCode::SMul               => write!(f, "smul"),
         };
@@ -70,7 +70,7 @@ impl std::fmt::Debug for OpCode {
             OpCode::Read2              => write!(f, "read2"),
 
             OpCode::Add                => write!(f, "add"),
-            OpCode::SAdd               => write!(f, "smul"),
+            OpCode::SAdd               => write!(f, "sadd"),
             OpCode::Mul                => write!(f, "mul"),
             OpCode::SMul               => write!(f, "smul"),
         };
