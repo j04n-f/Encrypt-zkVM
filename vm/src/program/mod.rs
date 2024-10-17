@@ -37,7 +37,25 @@ impl Program {
         let mut code: Vec<Operation> = Vec::new();
         let mut sponge = Rescue128::new();
 
-        let tokens: Vec<&str> = source.split_whitespace().collect();
+        let comment_symbol = "#";
+        let mut tokens = Vec::new();
+
+        for program_line in source.lines() {
+            let line = program_line.trim();
+
+            if !line.is_empty() && !line.starts_with(comment_symbol) {
+                let mut code_line = match line.find(comment_symbol) {
+                    Some(pos) => &line[..pos],
+                    None => line,
+                };
+
+                code_line = code_line.trim();
+
+                if !code_line.is_empty() {
+                    tokens.push(code_line);
+                }
+            }
+        }
 
         if tokens.is_empty() {
             return Err(ProgramError::empty_program());
@@ -94,9 +112,10 @@ fn parse_op(step: usize, line: &str) -> Result<Operation, ProgramError> {
         "read"  => parsers::parse_read(&op, step),
         "read2" => parsers::parse_read2(&op, step),
         "add"   => parsers::parse_add(&op, step),
-        "sadd"  => parsers::parse_sadd(&op, step),
         "mul"   => parsers::parse_mul(&op, step),
+        "sadd"  => parsers::parse_sadd(&op, step),
         "smul"  => parsers::parse_smul(&op, step),
+        "add2"  => parsers::parse_add2(&op, step),
         _       => Err(ProgramError::invalid_op(&op, step)),
     };
 }

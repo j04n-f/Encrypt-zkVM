@@ -26,7 +26,33 @@ fn test_read_program() {
         format!("{program}"),
         String::from(
             "push(1) noop noop noop noop noop noop noop \
-             push(2) add read mul noop noop noop"
+             push(2) add read mul noop noop noop noop"
+        )
+    );
+
+    path.close().unwrap();
+}
+
+#[test]
+fn test_read_program_with_comments() {
+    let mut tmpfile = NamedTempFile::new().unwrap();
+
+    writeln!(tmpfile, "# Comment 1").unwrap();
+    writeln!(tmpfile, "push.1").unwrap();
+    writeln!(tmpfile, "push.2 # Comment 2").unwrap();
+    writeln!(tmpfile, "add").unwrap();
+    writeln!(tmpfile, "read").unwrap();
+    writeln!(tmpfile, "mul").unwrap();
+
+    let path = tmpfile.into_temp_path();
+
+    let program = Program::load(&path).unwrap();
+
+    assert_eq!(
+        format!("{program}"),
+        String::from(
+            "push(1) noop noop noop noop noop noop noop \
+             push(2) add read mul noop noop noop noop"
         )
     );
 

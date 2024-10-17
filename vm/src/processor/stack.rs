@@ -51,16 +51,17 @@ impl Stack {
 
         #[rustfmt::skip]
         match op.op_code() {
-            OpCode::Noop              => self.op_noop(),
+            OpCode::Noop    => self.op_noop(),
 
-            OpCode::Push              => self.op_push(op.value()),
-            OpCode::Read              => self.op_read(),
-            OpCode::Read2             => self.op_read2(),
+            OpCode::Push    => self.op_push(op.value()),
+            OpCode::Read    => self.op_read(),
+            OpCode::Read2   => self.op_read2(),
 
-            OpCode::Add               => self.op_add(),
-            OpCode::SAdd              => self.op_sadd(),
-            OpCode::Mul               => self.op_mul(),
-            OpCode::SMul              => self.op_smul(),
+            OpCode::Add     => self.op_add(),
+            OpCode::Mul     => self.op_mul(),
+            OpCode::SAdd    => self.op_sadd(),
+            OpCode::SMul    => self.op_smul(),
+            OpCode::Add2    => self.op_add2(),
         }?;
 
         self.set_helpers();
@@ -165,28 +166,6 @@ impl Stack {
         self.shift_left(op, 2, 1)
     }
 
-    fn op_sadd(&mut self) -> Result<(), StackError> {
-        let op = "sadd";
-
-        if self.depth < self.server_key.lwe_size() + 1 {
-            return Err(StackError::stack_underflow(op, self.clk));
-        }
-
-        let ct: Vec<BaseElement> = (1..=self.server_key.lwe_size())
-            .map(|i: usize| self.registers[i][self.clk - 1])
-            .collect();
-
-        let scalar = self.registers[0][self.clk - 1];
-
-        let result_ct = self.server_key.scalar_add(&scalar, &FheUInt8::new(&ct));
-
-        for (i, value) in result_ct.ciphertext().iter().enumerate() {
-            self.registers[i][self.clk] = *value;
-        }
-
-        self.shift_left(op, 6, 1)
-    }
-
     fn op_mul(&mut self) -> Result<(), StackError> {
         let op: &str = "mul";
 
@@ -199,14 +178,40 @@ impl Stack {
         self.shift_left(op, 2, 1)
     }
 
-    fn op_smul(&mut self) -> Result<(), StackError> {
-        let op = "smul";
+    fn op_sadd(&mut self) -> Result<(), StackError> {
+        let op = "sadd";
 
-        if self.depth < self.server_key.lwe_size() + 1 {
+        let lwe_size = self.server_key.lwe_size();
+
+        if self.depth < lwe_size + 1 {
             return Err(StackError::stack_underflow(op, self.clk));
         }
 
-        let ct: Vec<BaseElement> = (1..=self.server_key.lwe_size())
+        let ct: Vec<BaseElement> = (1..(lwe_size + 1))
+            .map(|i: usize| self.registers[i][self.clk - 1])
+            .collect();
+
+        let scalar = self.registers[0][self.clk - 1];
+
+        let result_ct = self.server_key.scalar_add(&scalar, &FheUInt8::new(&ct));
+
+        for (i, value) in result_ct.ciphertext().iter().enumerate() {
+            self.registers[i][self.clk] = *value;
+        }
+
+        self.shift_left(op, lwe_size + 1, 1)
+    }
+
+    fn op_smul(&mut self) -> Result<(), StackError> {
+        let op = "smul";
+
+        let lwe_size = self.server_key.lwe_size();
+
+        if self.depth < lwe_size + 1 {
+            return Err(StackError::stack_underflow(op, self.clk));
+        }
+
+        let ct: Vec<BaseElement> = (1..(lwe_size + 1))
             .map(|i: usize| self.registers[i][self.clk - 1])
             .collect();
 
@@ -218,7 +223,30 @@ impl Stack {
             self.registers[i][self.clk] = *value;
         }
 
-        self.shift_left(op, 6, 1)
+        self.shift_left(op, lwe_size + 1, 1)
+    }
+
+    fn op_add2(&mut self) -> Result<(), StackError> {
+        let op = "add2";
+
+        let lwe_size = self.server_key.lwe_size();
+
+        if self.depth < lwe_size * 2 {
+            return Err(StackError::stack_underflow(op, self.clk));
+        }
+
+        let ct0: Vec<BaseElement> = (0..lwe_size).map(|i: usize| self.registers[i][self.clk - 1]).collect();
+        let ct1: Vec<BaseElement> = (0..lwe_size)
+            .map(|i: usize| self.registers[i + lwe_size][self.clk - 1])
+            .collect();
+
+        let result_ct = self.server_key.add(&FheUInt8::new(&ct0), &FheUInt8::new(&ct1));
+
+        for (i, value) in result_ct.ciphertext().iter().enumerate() {
+            self.registers[i][self.clk] = *value;
+        }
+
+        self.shift_left(op, lwe_size * 2, lwe_size)
     }
 
     fn shift_left(&mut self, op: &str, start: usize, pos_count: usize) -> Result<(), StackError> {

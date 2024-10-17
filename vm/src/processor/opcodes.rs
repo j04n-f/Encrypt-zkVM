@@ -39,22 +39,24 @@ pub enum OpCode {
     Mul   = 0b01_001,    // shift-left: 1
     SAdd  = 0b01_010,    // shift-left: 1
     SMul  = 0b01_100,    // shift-left: 1
+    Add2 = 0b01_011,     // shift-left: 5
 }
 
 impl std::fmt::Display for OpCode {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         #[rustfmt::skip]
         return match self {
-            OpCode::Noop               => write!(f, "noop"),
+            OpCode::Noop    => write!(f, "noop"),
 
-            OpCode::Push               => write!(f, "push"),
-            OpCode::Read               => write!(f, "read"),
-            OpCode::Read2              => write!(f, "read2"),
+            OpCode::Push    => write!(f, "push"),
+            OpCode::Read    => write!(f, "read"),
+            OpCode::Read2   => write!(f, "read2"),
 
-            OpCode::Add                => write!(f, "add"),
-            OpCode::SAdd               => write!(f, "sadd"),
-            OpCode::Mul                => write!(f, "mul"),
-            OpCode::SMul               => write!(f, "smul"),
+            OpCode::Add     => write!(f, "add"),
+            OpCode::Mul     => write!(f, "mul"),
+            OpCode::SAdd    => write!(f, "sadd"),
+            OpCode::SMul    => write!(f, "smul"),
+            OpCode::Add2    => write!(f, "add2"),
         };
     }
 }
@@ -63,16 +65,17 @@ impl std::fmt::Debug for OpCode {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         #[rustfmt::skip]
         return match self {
-            OpCode::Noop               => write!(f, "noop"),
+            OpCode::Noop    => write!(f, "noop"),
 
-            OpCode::Push               => write!(f, "push"),
-            OpCode::Read               => write!(f, "read"),
-            OpCode::Read2              => write!(f, "read2"),
+            OpCode::Push    => write!(f, "push"),
+            OpCode::Read    => write!(f, "read"),
+            OpCode::Read2   => write!(f, "read2"),
 
-            OpCode::Add                => write!(f, "add"),
-            OpCode::SAdd               => write!(f, "sadd"),
-            OpCode::Mul                => write!(f, "mul"),
-            OpCode::SMul               => write!(f, "smul"),
+            OpCode::Add     => write!(f, "add"),
+            OpCode::Mul     => write!(f, "mul"),
+            OpCode::SAdd    => write!(f, "sadd"),
+            OpCode::SMul    => write!(f, "smul"),
+            OpCode::Add2    => write!(f, "add2"),
         };
     }
 }
@@ -167,6 +170,10 @@ impl Operation {
 
     pub fn smul() -> Operation {
         Operation::new(OpCode::SMul, OpValue::None)
+    }
+
+    pub fn add2() -> Operation {
+        Operation::new(OpCode::Add2, OpValue::None)
     }
 }
 

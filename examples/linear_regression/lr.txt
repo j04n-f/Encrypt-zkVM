@@ -1,17 +1,20 @@
-read
+# Compute
+# b0 + (b1 * x1) + (b2 * x2) + (b3 * x3) + (b4 * x4)
+
 read2
 read
-smul
-sadd
+smul # (b1 * x1)
 read2
 read
-smul
-sadd
+smul # (b2 * x2)
+add2 # (b1 * x1) + (b2 * x2)
 read2
 read
-smul
-sadd
+smul # (b3 * x3)
+add2 # (b1 * x1) + (b2 * x2) + (b3 * x3)
 read2
 read
-smul
-sadd
+smul # (b4 * x4)
+add2 # (b1 * x1) + (b2 * x2) + (b3 * x3) + (b4 * x4)
+read
+sadd # (b1 * x1) + (b2 * x2) + (b3 * x3) + (b4 * x4) + b0

@@ -44,7 +44,7 @@ fn main() {
         let x3 = client_key.encrypt(clear_x3);
         let x4 = client_key.encrypt(clear_x4);
 
-        let data = InputData::new(&[b0, b1, b2, b3, b4], &[x1, x2, x3, x4], &client_key);
+        let data = InputData::new(&[b1, b2, b3, b4, b0], &[x1, x2, x3, x4], &client_key);
 
         (data.to_bytes(), client_key)
     };

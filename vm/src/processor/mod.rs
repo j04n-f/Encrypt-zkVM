@@ -32,7 +32,7 @@ const ONE: BaseElement = BaseElement::ONE;
 // winterfell constrains
 // trace length must be at least 8 and multiple of 2
 const MIN_TRACE_LENGTH: usize = 8;
-const MAX_STACK_DEPTH: usize = 8;
+const MAX_STACK_DEPTH: usize = 16;
 
 // overwrite last trace row with random values
 // winterfell uses trace.length() - 1 to compute the column degree

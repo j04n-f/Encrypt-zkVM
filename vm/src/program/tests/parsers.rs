@@ -26,31 +26,6 @@ mod add {
 }
 
 #[cfg(test)]
-mod sadd {
-    use super::*;
-
-    #[test]
-    fn test_parse() {
-        let source = "sadd";
-        let program = Program::compile(source).unwrap();
-        let code = program.get_code();
-
-        assert_eq!(code[0], Operation::sadd());
-    }
-
-    #[test]
-    fn test_extra_param_error() {
-        let source = "sadd.1";
-        let error = Program::compile(source).unwrap_err();
-
-        assert_eq!(
-            format!("{error}"),
-            format!("{}", ProgramError::extra_param(&["sadd"], 1))
-        );
-    }
-}
-
-#[cfg(test)]
 mod mul {
     use super::*;
 
@@ -96,6 +71,56 @@ mod smul {
         assert_eq!(
             format!("{error}"),
             format!("{}", ProgramError::extra_param(&["smul"], 1))
+        );
+    }
+}
+
+#[cfg(test)]
+mod sadd {
+    use super::*;
+
+    #[test]
+    fn test_parse() {
+        let source = "sadd";
+        let program = Program::compile(source).unwrap();
+        let code = program.get_code();
+
+        assert_eq!(code[0], Operation::sadd());
+    }
+
+    #[test]
+    fn test_extra_param_error() {
+        let source = "sadd.1";
+        let error = Program::compile(source).unwrap_err();
+
+        assert_eq!(
+            format!("{error}"),
+            format!("{}", ProgramError::extra_param(&["sadd"], 1))
+        );
+    }
+}
+
+#[cfg(test)]
+mod add2 {
+    use super::*;
+
+    #[test]
+    fn test_parse() {
+        let source = "add2";
+        let program = Program::compile(source).unwrap();
+        let code = program.get_code();
+
+        assert_eq!(code[0], Operation::add2());
+    }
+
+    #[test]
+    fn test_extra_param_error() {
+        let source = "add2.1";
+        let error = Program::compile(source).unwrap_err();
+
+        assert_eq!(
+            format!("{error}"),
+            format!("{}", ProgramError::extra_param(&["add2"], 1))
         );
     }
 }

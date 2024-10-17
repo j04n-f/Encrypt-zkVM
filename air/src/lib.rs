@@ -113,7 +113,8 @@ impl Air for ProcessorAir {
 
         // Stack Depth || deegre 5
         result[1] = (frame.next()[11] - frame.current()[11] - b0 + b1)
-            - b0 * not_(b1) * not_(b2) * b3 * not_(b4) * E::from(4u8);
+            - b0 * not_(b1) * not_(b2) * b3 * not_(b4) * E::from(4u8)
+            + not_(b0) * b1 * not_(b2) * b3 * b4 * E::from(4u8);
 
         // Shr or Shl || deegre 2
         result[2] = b0 * b1;
