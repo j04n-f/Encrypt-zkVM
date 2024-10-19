@@ -28,15 +28,6 @@ impl Decoder {
     //     self.trace_length
     // }
 
-    #[cfg(test)]
-    pub fn decoder_bits_state(&self, clk: usize) -> Vec<BaseElement> {
-        let mut state = Vec::with_capacity(self.op_bits_trace.len());
-        for i in 0..self.op_bits_trace.len() {
-            state.push(self.op_bits_trace[i][clk]);
-        }
-        state
-    }
-
     pub fn into_trace(mut self, trace_length: usize) -> Vec<Vec<BaseElement>> {
         for col in self.op_bits_trace.iter_mut() {
             col.resize(self.clk + 1, ZERO);

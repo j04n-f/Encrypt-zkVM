@@ -17,7 +17,7 @@ use chiplets::Chiplets;
 
 mod errors;
 
-pub use errors::StackError;
+pub use errors::ProcessorError;
 
 use rand::Rng;
 
@@ -29,9 +29,10 @@ mod tests;
 const ZERO: BaseElement = BaseElement::ZERO;
 const ONE: BaseElement = BaseElement::ONE;
 
-// winterfell constrains
-// trace length must be at least 8 and multiple of 2
-const MIN_TRACE_LENGTH: usize = 8;
+// constrains:
+// winterfell trace length must be at least 8 and multiple of 2
+// rescue-prime hash sponge requries at least 16 rounds
+const MIN_TRACE_LENGTH: usize = 16;
 const MAX_STACK_DEPTH: usize = 16;
 
 // overwrite last trace row with random values
@@ -57,7 +58,7 @@ impl Processor {
         }
     }
 
-    pub fn run(program: Program, inputs: ProgramInputs) -> Result<Processor, StackError> {
+    pub fn run(program: Program, inputs: ProgramInputs) -> Result<Processor, ProcessorError> {
         let mut processor = Processor::new(inputs);
 
         for op in program.get_code().iter() {
@@ -94,11 +95,19 @@ impl Processor {
         self.stack.current_state()
     }
 
-    fn execute_op(&mut self, op: &Operation) -> Result<(), StackError> {
+    fn execute_op(&mut self, op: &Operation) -> Result<(), ProcessorError> {
         self.system.advance_step();
-        self.stack.execute_op(op)?;
+
+        if let Err(err) = self.stack.execute_op(op) {
+            return Err(ProcessorError::Stack(err));
+        };
+
         self.decoder.decode_op(op);
-        self.chiplets.hash_op(op);
+
+        if let Err(err) = self.chiplets.hash_op(op) {
+            return Err(ProcessorError::Chiplets(err));
+        };
+
         Ok(())
     }
 }

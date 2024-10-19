@@ -16,11 +16,6 @@ impl System {
         self.clk_trace.len()
     }
 
-    #[cfg(test)]
-    pub fn system_state(&self, clk: usize) -> BaseElement {
-        self.clk_trace[clk]
-    }
-
     pub fn into_trace(mut self, trace_length: usize) -> Vec<Vec<BaseElement>> {
         // fill clock trace with incremental clk values
         self.clk_trace.resize(trace_length, ZERO);

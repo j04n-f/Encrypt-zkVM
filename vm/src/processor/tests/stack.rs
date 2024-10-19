@@ -1,191 +1,341 @@
-// use super::*;
+use super::*;
 
-// // TODO: Into Trace Test
+use errors::StackError;
 
-// #[test]
-// fn test_helpers() {
-//     let source = "push.1 push.2 mul";
-//     let program = Program::compile(source).unwrap();
-//     let processor = Processor::run(program, default_program_inputs()).unwrap();
+#[test]
+fn test_fill_trace_with_noop() {
+    let mut stack = Stack::new(&program_inputs(), 8);
 
-//     assert_eq!(vec![0], processor.stack.helpers_state(0));
-//     assert_eq!(vec![1], processor.stack.helpers_state(1));
-//     assert_eq!(vec![2], processor.stack.helpers_state(2));
-//     assert_eq!(vec![1], processor.stack.helpers_state(3));
-// }
+    for _ in 0..4 {
+        stack.execute_op(&Operation::push(2)).unwrap();
+        stack.execute_op(&Operation::push(2)).unwrap();
+        stack.execute_op(&Operation::add()).unwrap();
+    }
 
-// #[test]
-// fn test_mul() {
-//     let source = "push.1 push.2 mul";
-//     let program = Program::compile(source).unwrap();
-//     let processor = Processor::run(program, default_program_inputs()).unwrap();
+    let stack_trace = stack.into_trace(16);
 
-//     assert_eq!(vec![0, 0, 0, 0, 0, 0, 0, 0], processor.stack.stack_state(0));
-//     assert_eq!(vec![1, 0, 0, 0, 0, 0, 0, 0], processor.stack.stack_state(1));
-//     assert_eq!(vec![2, 1, 0, 0, 0, 0, 0, 0], processor.stack.stack_state(2));
-//     assert_eq!(vec![2, 0, 0, 0, 0, 0, 0, 0], processor.stack.stack_state(3));
+    for i in 12..15 {
+        assert_eq!(trace_state(i, &stack_trace), trace_state(i + 1, &stack_trace));
+    }
+}
 
-//     assert_eq!(processor.get_stack_output()[0], 2);
-// }
+mod mul {
 
-// #[test]
-// fn test_read() {
-//     let source = "read";
-//     let program = Program::compile(source).unwrap();
-//     let processor = Processor::run(program, default_program_inputs()).unwrap();
+    use super::*;
 
-//     assert_eq!(vec![0, 0, 0, 0, 0, 0, 0, 0], processor.stack.stack_state(0));
-//     assert_eq!(vec![3, 0, 0, 0, 0, 0, 0, 0], processor.stack.stack_state(1));
-// }
+    #[test]
+    fn test_operation_execution() {
+        let mut stack = Stack::new(&program_inputs(), 8);
 
-// #[test]
-// fn test_read2() {
-//     let source = "read2";
-//     let inputs = default_program_inputs();
-//     let value = &inputs.get_secret()[0];
-//     let program = Program::compile(source).unwrap();
-//     let processor = Processor::run(program, inputs).unwrap();
+        stack.execute_op(&Operation::push(2)).unwrap();
+        stack.execute_op(&Operation::push(2)).unwrap();
+        stack.execute_op(&Operation::mul()).unwrap();
 
-//     assert_eq!(vec![0, 0, 0, 0, 0, 0, 0, 0], processor.stack.stack_state(0));
-//     assert_eq!(value.ciphertext(), processor.stack.stack_state(1)[..5]);
-// }
+        let stack_trace = stack.into_trace(8);
 
-// #[test]
-// fn test_push() {
-//     let source = "push.4";
-//     let program = Program::compile(source).unwrap();
-//     let processor = Processor::run(program, default_program_inputs()).unwrap();
+        let trace_row2 = trace_state(2, &stack_trace);
+        let trace_row3 = trace_state(3, &stack_trace);
 
-//     assert_eq!(vec![0, 0, 0, 0, 0, 0, 0, 0], processor.stack.stack_state(0));
-//     assert_eq!(vec![4, 0, 0, 0, 0, 0, 0, 0], processor.stack.stack_state(1));
-// }
+        assert_eq!(trace_row2[0], to_element(2));
+        assert_eq!(trace_row3[0], to_element(1));
 
-// #[test]
-// fn test_sadd() {
-//     let source = "read2 read sadd";
-//     let inputs = default_program_inputs();
-//     let value = &inputs.get_secret()[0];
-//     let scalar = &inputs.get_public()[0];
-//     let server_key = inputs.get_server_key();
-//     let program = Program::compile(source).unwrap();
-//     let processor = Processor::run(program, inputs).unwrap();
+        assert_eq!(trace_row3[1], to_element(4));
+    }
 
-//     let result = server_key.scalar_add(scalar, value);
+    #[test]
+    fn test_stack_underflow_error() {
+        let mut stack = Stack::new(&program_inputs(), 8);
 
-//     let mut register1 = value.ciphertext();
-//     register1.append(&mut vec![0, 0, 0]);
+        stack.execute_op(&Operation::push(2)).unwrap();
 
-//     let mut register2 = vec![*scalar as u128];
-//     register2.extend(value.ciphertext());
-//     register2.append(&mut vec![0, 0]);
+        let op = Operation::mul();
 
-//     let mut register3 = result.ciphertext();
-//     register3.append(&mut vec![0, 0, 0]);
+        let error = stack.execute_op(&op).unwrap_err();
 
-//     assert_eq!(vec![0, 0, 0, 0, 0, 0, 0, 0], processor.stack.stack_state(0));
-//     assert_eq!(register1, processor.stack.stack_state(1));
-//     assert_eq!(register2, processor.stack.stack_state(2));
-//     assert_eq!(register3, processor.stack.stack_state(3));
-// }
+        assert_eq!(format!("{error}"), format!("{}", StackError::stack_underflow(&op, 2)));
+    }
+}
 
-// #[test]
-// fn test_smul() {
-//     let source = "read2 read smul";
-//     let inputs = default_program_inputs();
-//     let value = &inputs.get_secret()[0];
-//     let scalar = &inputs.get_public()[0];
-//     let server_key = inputs.get_server_key();
-//     let program = Program::compile(source).unwrap();
-//     let processor = Processor::run(program, inputs).unwrap();
+mod add {
 
-//     let result = server_key.scalar_mul(scalar, value);
+    use super::*;
 
-//     let mut register1 = value.ciphertext();
-//     register1.append(&mut vec![0, 0, 0]);
+    #[test]
+    fn test_operation_execution() {
+        let mut stack = Stack::new(&program_inputs(), 8);
 
-//     let mut register2 = vec![*scalar as u128];
-//     register2.extend(value.ciphertext());
-//     register2.append(&mut vec![0, 0]);
+        stack.execute_op(&Operation::push(2)).unwrap();
+        stack.execute_op(&Operation::push(2)).unwrap();
+        stack.execute_op(&Operation::add()).unwrap();
 
-//     let mut register3 = result.ciphertext();
-//     register3.append(&mut vec![0, 0, 0]);
+        let stack_trace = stack.into_trace(8);
 
-//     assert_eq!(vec![0, 0, 0, 0, 0, 0, 0, 0], processor.stack.stack_state(0));
-//     assert_eq!(register1, processor.stack.stack_state(1));
-//     assert_eq!(register2, processor.stack.stack_state(2));
-//     assert_eq!(register3, processor.stack.stack_state(3));
-// }
+        let trace_row2 = trace_state(2, &stack_trace);
+        let trace_row3 = trace_state(3, &stack_trace);
 
-// #[test]
-// fn test_add_stack_underflow() {
-//     let source = "push.1 add";
-//     let program = Program::compile(source).unwrap();
-//     let error = Processor::run(program, default_program_inputs()).unwrap_err();
+        assert_eq!(trace_row2[0], to_element(2));
+        assert_eq!(trace_row3[0], to_element(1));
 
-//     assert_eq!(format!("{error}"), format!("{}", StackError::stack_underflow("add", 2)));
-// }
+        assert_eq!(trace_row3[1], to_element(4));
+    }
 
-// #[test]
-// fn test_sadd_stack_underflow() {
-//     let source = "read2 sadd";
-//     let program = Program::compile(source).unwrap();
-//     let error = Processor::run(program, default_program_inputs()).unwrap_err();
+    #[test]
+    fn test_stack_underflow_error() {
+        let mut stack = Stack::new(&program_inputs(), 8);
 
-//     assert_eq!(
-//         format!("{error}"),
-//         format!("{}", StackError::stack_underflow("sadd", 2))
-//     );
-// }
+        stack.execute_op(&Operation::push(2)).unwrap();
 
-// #[test]
-// fn test_mul_stack_underflow() {
-//     let source = "push.1 mul";
-//     let program = Program::compile(source).unwrap();
-//     let error = Processor::run(program, default_program_inputs()).unwrap_err();
+        let op = Operation::add();
 
-//     assert_eq!(format!("{error}"), format!("{}", StackError::stack_underflow("mul", 2)));
-// }
+        let error = stack.execute_op(&op).unwrap_err();
 
-// #[test]
-// fn test_smul_stack_underflow() {
-//     let source = "read2 smul";
-//     let program = Program::compile(source).unwrap();
-//     let error = Processor::run(program, default_program_inputs()).unwrap_err();
+        assert_eq!(format!("{error}"), format!("{}", StackError::stack_underflow(&op, 2)));
+    }
+}
 
-//     assert_eq!(
-//         format!("{error}"),
-//         format!("{}", StackError::stack_underflow("smul", 2))
-//     );
-// }
+mod noop {
 
-// #[test]
-// fn test_read_empty_inputs() {
-//     let source = "read read read";
-//     let program = Program::compile(source).unwrap();
-//     let error = Processor::run(program, default_program_inputs()).unwrap_err();
+    use super::*;
 
-//     assert_eq!(format!("{error}"), format!("{}", StackError::empty_inputs(3)));
-// }
+    #[test]
+    fn test_operation_execution() {
+        let mut stack = Stack::new(&program_inputs(), 8);
 
-// #[test]
-// fn test_read2_empty_inputs() {
-//     let source = "read2 read2";
-//     let program = Program::compile(source).unwrap();
-//     let error = Processor::run(program, default_program_inputs()).unwrap_err();
+        stack.execute_op(&Operation::noop()).unwrap();
 
-//     assert_eq!(format!("{error}"), format!("{}", StackError::empty_inputs(2)));
-// }
+        let stack_trace = stack.into_trace(8);
 
-// #[test]
-// fn test_stack_overflow() {
-//     let source = "push.1 push.1 push.1 push.1 push.1 push.1 push.1 push.1";
-//     let program = Program::compile(source).unwrap();
+        let trace_row0 = trace_state(0, &stack_trace);
+        let trace_row1 = trace_state(1, &stack_trace);
 
-//     Processor::run(program, default_program_inputs()).unwrap();
+        assert_eq!(trace_row0, trace_row1);
+    }
+}
 
-//     let source = "push.1 push.1 push.1 push.1 push.1 push.1 push.1 push.1 push.1";
-//     let program = Program::compile(source).unwrap();
-//     let error = Processor::run(program, default_program_inputs()).unwrap_err();
+mod push {
 
-//     assert_eq!(format!("{error}"), format!("{}", StackError::stack_overflow("push", 9)));
-// }
+    use super::*;
+
+    #[test]
+    fn test_operation_execution() {
+        let mut stack = Stack::new(&program_inputs(), 8);
+
+        stack.execute_op(&Operation::push(5)).unwrap();
+
+        let stack_trace = stack.into_trace(8);
+
+        let trace_row0 = trace_state(0, &stack_trace);
+        let trace_row1 = trace_state(1, &stack_trace);
+
+        assert_eq!(trace_row0[0], to_element(0));
+        assert_eq!(trace_row1[0], to_element(1));
+
+        assert_eq!(trace_row1[1], to_element(5));
+    }
+}
+
+mod read {
+
+    use super::*;
+
+    #[test]
+    fn test_operation_execution() {
+        let mut stack = Stack::new(&program_inputs(), 8);
+
+        stack.execute_op(&Operation::read()).unwrap();
+
+        let stack_trace = stack.into_trace(8);
+
+        let trace_row0 = trace_state(0, &stack_trace);
+        let trace_row1 = trace_state(1, &stack_trace);
+
+        assert_eq!(trace_row0[0], to_element(0));
+        assert_eq!(trace_row1[0], to_element(1));
+
+        assert_eq!(trace_row1[1], to_element(3));
+    }
+
+    #[test]
+    fn test_empty_inputs_error() {
+        let mut stack = Stack::new(&empty_program_inputs(), 8);
+
+        let op = Operation::read();
+
+        let error = stack.execute_op(&op).unwrap_err();
+
+        assert_eq!(format!("{error}"), format!("{}", StackError::empty_inputs(&op, 1)));
+    }
+}
+
+mod read2 {
+
+    use super::*;
+
+    #[test]
+    fn test_operation_execution() {
+        let inputs = program_inputs();
+        let sct_inputs = inputs.get_secret().to_vec();
+
+        let mut stack = Stack::new(&inputs, 8);
+
+        stack.execute_op(&Operation::read2()).unwrap();
+
+        let stack_trace = stack.into_trace(8);
+
+        let trace_row0 = trace_state(0, &stack_trace);
+        let trace_row1 = trace_state(1, &stack_trace);
+
+        assert_eq!(trace_row0[0], to_element(0));
+        assert_eq!(trace_row1[0], to_element(5));
+
+        let input_ct = sct_inputs[0].ciphertext().to_vec();
+
+        assert_eq!(trace_row1[1..6], input_ct);
+    }
+
+    #[test]
+    fn test_empty_inputs_error() {
+        let mut stack = Stack::new(&empty_program_inputs(), 8);
+
+        let op = Operation::read2();
+
+        let error = stack.execute_op(&op).unwrap_err();
+
+        assert_eq!(format!("{error}"), format!("{}", StackError::empty_inputs(&op, 1)));
+    }
+}
+
+mod sadd {
+
+    use super::*;
+
+    #[test]
+    fn test_operation_execution() {
+        let inputs = program_inputs();
+        let pub_inputs = inputs.get_public().to_vec();
+        let sct_inputs = inputs.get_secret().to_vec();
+
+        let mut stack = Stack::new(&inputs, 8);
+
+        stack.execute_op(&Operation::read2()).unwrap();
+        stack.execute_op(&Operation::read()).unwrap();
+        stack.execute_op(&Operation::sadd()).unwrap();
+
+        let stack_trace = stack.into_trace(8);
+
+        let trace_row2 = trace_state(2, &stack_trace);
+        let trace_row3 = trace_state(3, &stack_trace);
+
+        assert_eq!(trace_row2[0], to_element(6));
+        assert_eq!(trace_row3[0], to_element(5));
+
+        let scalar = BaseElement::from(pub_inputs[0]);
+
+        let result = inputs.get_server_key().scalar_add(&scalar, &sct_inputs[0]);
+        let result_ct = result.ciphertext().to_vec();
+
+        assert_eq!(trace_row3[1..6], result_ct);
+    }
+
+    #[test]
+    fn test_stack_underflow_error() {
+        let mut stack = Stack::new(&program_inputs(), 8);
+
+        stack.execute_op(&Operation::read2()).unwrap();
+
+        let op = Operation::sadd();
+
+        let error = stack.execute_op(&op).unwrap_err();
+
+        assert_eq!(format!("{error}"), format!("{}", StackError::stack_underflow(&op, 2)));
+    }
+}
+
+mod smul {
+
+    use super::*;
+
+    #[test]
+    fn test_operation_execution() {
+        let inputs = program_inputs();
+        let pub_inputs = inputs.get_public().to_vec();
+        let sct_inputs = inputs.get_secret().to_vec();
+
+        let mut stack = Stack::new(&inputs, 8);
+
+        stack.execute_op(&Operation::read2()).unwrap();
+        stack.execute_op(&Operation::read()).unwrap();
+        stack.execute_op(&Operation::smul()).unwrap();
+
+        let stack_trace = stack.into_trace(8);
+
+        let trace_row2 = trace_state(2, &stack_trace);
+        let trace_row3 = trace_state(3, &stack_trace);
+
+        assert_eq!(trace_row2[0], to_element(6));
+        assert_eq!(trace_row3[0], to_element(5));
+
+        let scalar = BaseElement::from(pub_inputs[0]);
+
+        let result = inputs.get_server_key().scalar_mul(&scalar, &sct_inputs[0]);
+        let result_ct = result.ciphertext().to_vec();
+
+        assert_eq!(trace_row3[1..6], result_ct);
+    }
+
+    #[test]
+    fn test_stack_underflow_error() {
+        let mut stack = Stack::new(&program_inputs(), 8);
+
+        stack.execute_op(&Operation::read2()).unwrap();
+
+        let op = Operation::smul();
+
+        let error = stack.execute_op(&op).unwrap_err();
+
+        assert_eq!(format!("{error}"), format!("{}", StackError::stack_underflow(&op, 2)));
+    }
+}
+
+mod add2 {
+
+    use super::*;
+
+    #[test]
+    fn test_operation_execution() {
+        let inputs = program_inputs();
+        let sct_inputs = inputs.get_secret().to_vec();
+
+        let mut stack = Stack::new(&inputs, 8);
+
+        stack.execute_op(&Operation::read2()).unwrap();
+        stack.execute_op(&Operation::read2()).unwrap();
+        stack.execute_op(&Operation::add2()).unwrap();
+
+        let stack_trace = stack.into_trace(8);
+
+        let trace_row2 = trace_state(2, &stack_trace);
+        let trace_row3 = trace_state(3, &stack_trace);
+
+        assert_eq!(trace_row2[0], to_element(10));
+        assert_eq!(trace_row3[0], to_element(5));
+
+        let result = inputs.get_server_key().add(&sct_inputs[0], &sct_inputs[1]);
+        let result_ct = result.ciphertext().to_vec();
+
+        assert_eq!(trace_row3[1..6], result_ct);
+    }
+
+    #[test]
+    fn test_stack_underflow_error() {
+        let mut stack = Stack::new(&program_inputs(), 8);
+
+        stack.execute_op(&Operation::read2()).unwrap();
+
+        let op = Operation::add2();
+
+        let error = stack.execute_op(&op).unwrap_err();
+
+        assert_eq!(format!("{error}"), format!("{}", StackError::stack_underflow(&op, 2)));
+    }
+}

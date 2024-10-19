@@ -61,7 +61,7 @@ fn test_read_program_with_comments() {
 
 #[test]
 fn test_invalid_op() {
-    let source = "push.1 push.2 ad";
+    let source = "push.1\npush.2\nad";
     let error = Program::compile(source).unwrap_err();
 
     assert_eq!(format!("{error}"), format!("{}", ProgramError::invalid_op(&["ad"], 3)));
@@ -69,21 +69,21 @@ fn test_invalid_op() {
 
 #[test]
 fn test_compile_program() {
-    let source = "push.1 push.2 add read mul";
+    let source = "push.1\npush.2\nadd\nread\nmul";
     let program = Program::compile(source).unwrap();
 
     assert_eq!(
         format!("{program}"),
         String::from(
             "push(1) noop noop noop noop noop noop noop \
-             push(2) add read mul noop noop noop"
+             push(2) add read mul noop noop noop noop"
         )
     );
 }
 
 #[test]
 fn test_program_padding() {
-    let source = "push.1 push.2 add read read read mul add add";
+    let source = "push.1\npush.2\nadd\nread\nread\nread\nmul\nadd\nadd";
     let program = Program::compile(source).unwrap();
     let code = program.get_code();
 

@@ -1,4 +1,4 @@
-use super::{HashOperation, Operation, ONE, ZERO};
+use super::{errors::ChipletsError, HashOperation, OpCode, Operation, ONE, ZERO};
 use crypto::{rescue::STATE_WIDTH, Rescue128};
 use winterfell::math::fields::f128::BaseElement;
 
@@ -59,10 +59,11 @@ impl Chiplets {
         registers
     }
 
-    pub fn hash_op(&mut self, op: &Operation) {
+    pub fn hash_op(&mut self, op: &Operation) -> Result<(), ChipletsError> {
         self.advance_clock();
         self.ensure_trace_capacity();
-        self.apply_hacc_round(op);
+        self.apply_hacc_round(op)?;
+        Ok(())
     }
 
     fn advance_clock(&mut self) {
@@ -81,7 +82,11 @@ impl Chiplets {
         }
     }
 
-    fn apply_hacc_round(&mut self, op: &Operation) {
+    fn apply_hacc_round(&mut self, op: &Operation) -> Result<(), ChipletsError> {
+        if !self.sponge.is_apply_round() && op.op_code() != OpCode::Noop {
+            return Err(ChipletsError::invalid_operation(op, self.clk));
+        }
+
         self.sponge.update(op.code(), op.value());
 
         let hash_op = HashOperation::round();
@@ -95,5 +100,7 @@ impl Chiplets {
         for (col, state) in self.sponge.state().iter().enumerate() {
             self.sponge_trace[col][self.clk] = *state;
         }
+
+        Ok(())
     }
 }

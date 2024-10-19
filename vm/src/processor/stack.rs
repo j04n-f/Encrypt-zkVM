@@ -1,5 +1,5 @@
+use super::errors::StackError;
 use super::ProgramInputs;
-use super::StackError;
 use super::{OpCode, Operation, ZERO};
 
 use fhe::{FheUInt8, ServerKey};
@@ -53,42 +53,20 @@ impl Stack {
         match op.op_code() {
             OpCode::Noop    => self.op_noop(),
 
-            OpCode::Push    => self.op_push(op.value()),
-            OpCode::Read    => self.op_read(),
-            OpCode::Read2   => self.op_read2(),
+            OpCode::Push    => self.op_push(op),
+            OpCode::Read    => self.op_read(op),
+            OpCode::Read2   => self.op_read2(op),
 
-            OpCode::Add     => self.op_add(),
-            OpCode::Mul     => self.op_mul(),
-            OpCode::SAdd    => self.op_sadd(),
-            OpCode::SMul    => self.op_smul(),
-            OpCode::Add2    => self.op_add2(),
+            OpCode::Add     => self.op_add(op),
+            OpCode::Mul     => self.op_mul(op),
+            OpCode::SAdd    => self.op_sadd(op),
+            OpCode::SMul    => self.op_smul(op),
+            OpCode::Add2    => self.op_add2(op),
         }?;
 
         self.set_helpers();
 
         Ok(())
-    }
-
-    // pub fn trace_length(&self) -> usize {
-    //     self.trace_length
-    // }
-
-    #[cfg(test)]
-    pub fn stack_state(&self, clk: usize) -> Vec<BaseElement> {
-        let mut state = Vec::with_capacity(self.registers.len());
-        for i in 0..self.registers.len() {
-            state.push(self.registers[i][clk]);
-        }
-        state
-    }
-
-    #[cfg(test)]
-    pub fn helpers_state(&self, clk: usize) -> Vec<BaseElement> {
-        let mut state = Vec::with_capacity(self.helpers.len());
-        for i in 0..self.helpers.len() {
-            state.push(self.helpers[i][clk]);
-        }
-        state
     }
 
     pub fn current_state(&self) -> Vec<BaseElement> {
@@ -125,37 +103,35 @@ impl Stack {
         Ok(())
     }
 
-    fn op_push(&mut self, value: u8) -> Result<(), StackError> {
-        self.shift_right("push", 0, 1)?;
-        self.registers[0][self.clk] = BaseElement::from(value);
+    fn op_push(&mut self, op: &Operation) -> Result<(), StackError> {
+        self.shift_right(op, 0, 1)?;
+        self.registers[0][self.clk] = BaseElement::from(op.value());
         Ok(())
     }
 
-    fn op_read(&mut self) -> Result<(), StackError> {
-        self.shift_right("read", 0, 1)?;
+    fn op_read(&mut self, op: &Operation) -> Result<(), StackError> {
+        self.shift_right(op, 0, 1)?;
         let value = match self.tape_a.pop() {
             Some(value) => value,
-            None => return Err(StackError::empty_inputs(self.clk)),
+            None => return Err(StackError::empty_inputs(op, self.clk)),
         };
         self.registers[0][self.clk] = BaseElement::from(value);
         Ok(())
     }
 
-    fn op_read2(&mut self) -> Result<(), StackError> {
+    fn op_read2(&mut self, op: &Operation) -> Result<(), StackError> {
         let ct = match self.tape_b.pop() {
             Some(value) => value.ciphertext().to_vec(),
-            None => return Err(StackError::empty_inputs(self.clk)),
+            None => return Err(StackError::empty_inputs(op, self.clk)),
         };
-        self.shift_right("read2", 0, ct.len())?;
+        self.shift_right(op, 0, ct.len())?;
         for (i, value) in ct.iter().enumerate() {
             self.registers[i][self.clk] = *value;
         }
         Ok(())
     }
 
-    fn op_add(&mut self) -> Result<(), StackError> {
-        let op = "add";
-
+    fn op_add(&mut self, op: &Operation) -> Result<(), StackError> {
         if self.depth < 2 {
             return Err(StackError::stack_underflow(op, self.clk));
         }
@@ -166,9 +142,7 @@ impl Stack {
         self.shift_left(op, 2, 1)
     }
 
-    fn op_mul(&mut self) -> Result<(), StackError> {
-        let op: &str = "mul";
-
+    fn op_mul(&mut self, op: &Operation) -> Result<(), StackError> {
         if self.depth < 2 {
             return Err(StackError::stack_underflow(op, self.clk));
         }
@@ -178,9 +152,7 @@ impl Stack {
         self.shift_left(op, 2, 1)
     }
 
-    fn op_sadd(&mut self) -> Result<(), StackError> {
-        let op = "sadd";
-
+    fn op_sadd(&mut self, op: &Operation) -> Result<(), StackError> {
         let lwe_size = self.server_key.lwe_size();
 
         if self.depth < lwe_size + 1 {
@@ -202,9 +174,7 @@ impl Stack {
         self.shift_left(op, lwe_size + 1, 1)
     }
 
-    fn op_smul(&mut self) -> Result<(), StackError> {
-        let op = "smul";
-
+    fn op_smul(&mut self, op: &Operation) -> Result<(), StackError> {
         let lwe_size = self.server_key.lwe_size();
 
         if self.depth < lwe_size + 1 {
@@ -226,9 +196,7 @@ impl Stack {
         self.shift_left(op, lwe_size + 1, 1)
     }
 
-    fn op_add2(&mut self) -> Result<(), StackError> {
-        let op = "add2";
-
+    fn op_add2(&mut self, op: &Operation) -> Result<(), StackError> {
         let lwe_size = self.server_key.lwe_size();
 
         if self.depth < lwe_size * 2 {
@@ -249,7 +217,7 @@ impl Stack {
         self.shift_left(op, lwe_size * 2, lwe_size)
     }
 
-    fn shift_left(&mut self, op: &str, start: usize, pos_count: usize) -> Result<(), StackError> {
+    fn shift_left(&mut self, op: &Operation, start: usize, pos_count: usize) -> Result<(), StackError> {
         if self.depth < pos_count {
             return Err(StackError::stack_underflow(op, self.clk));
         }
@@ -270,7 +238,7 @@ impl Stack {
         Ok(())
     }
 
-    fn shift_right(&mut self, op: &str, start: usize, pos_count: usize) -> Result<(), StackError> {
+    fn shift_right(&mut self, op: &Operation, start: usize, pos_count: usize) -> Result<(), StackError> {
         // stack depth has been increased by pos_count
         self.depth += pos_count;
 

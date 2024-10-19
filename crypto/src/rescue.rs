@@ -33,8 +33,12 @@ impl Rescue128 {
         self.state
     }
 
+    pub fn is_apply_round(&self) -> bool {
+        self.step % CYCLE_LENGTH < NUM_ROUNDS
+    }
+
     pub fn update(&mut self, op_code: u8, op_value: u8) {
-        if self.step % CYCLE_LENGTH < NUM_ROUNDS {
+        if self.is_apply_round() {
             apply_round(&mut self.state, op_code, op_value, self.step);
         } else {
             self.state[2] = BaseElement::ZERO;

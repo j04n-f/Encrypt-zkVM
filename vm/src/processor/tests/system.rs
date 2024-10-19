@@ -1,38 +1,29 @@
-// use super::*;
+use super::*;
 
-// #[test]
-// fn test_clock() {
-//     let source = "push.1 push.2 mul";
-//     let program = Program::compile(source).unwrap();
-//     let processor = Processor::run(program, default_program_inputs()).unwrap();
+#[test]
+fn test_advance_clock() {
+    let mut system = System::new(8);
 
-//     assert_eq!(to_element(0), processor.system.system_state(0));
-//     assert_eq!(to_element(1), processor.system.system_state(1));
-//     assert_eq!(to_element(2), processor.system.system_state(2));
-//     assert_eq!(to_element(3), processor.system.system_state(3));
-// }
+    for _ in 0..8 {
+        system.advance_step();
+    }
 
-// #[test]
-// fn test_trace() {
-//     let source = "push.1 push.2 mul";
-//     let program = Program::compile(source).unwrap();
-//     let processor = Processor::run(program, default_program_inputs()).unwrap();
+    let clk_trace = system.into_trace(8)[0].to_vec();
 
-//     let trace_length = processor.system.trace_length();
+    assert_eq!(clk_trace, to_elements(&[0, 1, 2, 3, 4, 5, 6, 7]));
+}
 
-//     assert_eq!(
-//         to_elements(vec![0, 1, 2, 3, 4, 5, 6, 7]),
-//         processor.system.into_trace(trace_length)[0]
-//     );
+#[test]
+fn test_incremental_trace_fill() {
+    let mut system = System::new(8);
 
-//     let source = "push.1 push.2 mul push.2 push.3 mul push.2 mul";
-//     let program = Program::compile(source).unwrap();
-//     let processor = Processor::run(program, default_program_inputs()).unwrap();
+    for _ in 0..16 {
+        system.advance_step();
+    }
 
-//     let trace_length = processor.system.trace_length();
+    let clk_trace = system.into_trace(16);
 
-//     assert_eq!(
-//         to_elements(vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
-//         processor.system.into_trace(trace_length)[0]
-//     );
-// }
+    for i in 0..16 {
+        assert_eq!(trace_state(i, &clk_trace), to_elements(&[i as u8]));
+    }
+}

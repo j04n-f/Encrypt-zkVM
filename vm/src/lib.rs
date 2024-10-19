@@ -6,11 +6,11 @@ mod program;
 pub use program::{Program, ProgramInputs};
 
 mod processor;
-use processor::{Processor, StackError};
+use processor::{Processor, ProcessorError};
 
 use crypto::rescue::Hash;
 
-pub fn prove(program: Program, inputs: ProgramInputs) -> Result<(Hash, Vec<BaseElement>, Proof), StackError> {
+pub fn prove(program: Program, inputs: ProgramInputs) -> Result<(Hash, Vec<BaseElement>, Proof), ProcessorError> {
     let program_hash = program.get_hash();
     let secret_key = inputs.get_server_key();
     let processor = Processor::run(program, inputs)?;
