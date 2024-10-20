@@ -13,289 +13,30 @@ mod decoder;
 #[cfg(test)]
 mod system;
 
-// mod push {
+#[cfg(test)]
+mod chiplets;
 
-//     use super::*;
+#[test]
+fn test_trace() {
+    let source = "push.5\npush.3\nadd";
+    let program = Program::compile(source).unwrap();
+    let hash = program.get_hash().to_elements().to_vec();
+    let processor = Processor::run(program, program_inputs()).unwrap();
+    let trace = processor.trace().unwrap();
+    let trace_row31 = trace_state(31, &trace);
 
-//     #[test]
-//     fn test_trace() {
-//         let source = "push.5";
-//         let program = Program::compile(source).unwrap();
-//         let processor = Processor::run(program, program_inputs()).unwrap();
-//         let trace = processor.trace();
-//         let trace_row0 = trace_state(0, &trace);
-//         let trace_row1 = trace_state(1, &trace);
+    assert_eq!(trace_row31[0], to_element(31));
 
-//         let mut state = vec![ZERO; 4];
-//         let op = Operation::push(5);
+    assert_eq!(trace_row31[1..6], to_elements(&[0, 0, 0, 0, 0]));
 
-//         rescue::apply_round(&mut state, op.code(), op.value(), 0);
+    assert_eq!(trace_row31[6], to_element(0));
 
-//         assert_eq!(trace_row0[0], to_element(0));
-//         assert_eq!(trace_row1[0], to_element(1));
+    assert_eq!(trace_row31[7..9], hash);
+    assert_eq!(trace_row31[9..11], [ZERO, ZERO]);
 
-//         assert_eq!(trace_row0[1..6], to_elements(&[0, 0, 0, 0, 1]));
-
-//         assert_eq!(trace_row0[6], to_element(1));
-
-//         assert_eq!(trace_row1[7..11], state);
-
-//         assert_eq!(trace_row0[11], to_element(0));
-//         assert_eq!(trace_row1[11], to_element(1));
-
-//         assert_eq!(trace_row0[12], to_element(0));
-//         assert_eq!(trace_row1[12], to_element(5));
-//     }
-// }
-
-// mod read {
-
-//     use super::*;
-
-//     #[test]
-//     fn test_trace() {
-//         let source = "read";
-//         let program = Program::compile(source).unwrap();
-//         let processor = Processor::run(program, program_inputs()).unwrap();
-//         let trace = processor.trace();
-//         let trace_row0 = trace_state(0, &trace);
-//         let trace_row1 = trace_state(1, &trace);
-
-//         let mut state = vec![ZERO; 4];
-//         let op = Operation::read();
-
-//         rescue::apply_round(&mut state, op.code(), op.value(), 0);
-
-//         assert_eq!(trace_row0[0], to_element(0));
-//         assert_eq!(trace_row1[0], to_element(1));
-
-//         assert_eq!(trace_row0[1..6], to_elements(&[1, 0, 0, 0, 1]));
-
-//         assert_eq!(trace_row0[6], to_element(1));
-
-//         assert_eq!(trace_row1[7..11], state);
-
-//         assert_eq!(trace_row0[11], to_element(0));
-//         assert_eq!(trace_row1[11], to_element(1));
-
-//         assert_eq!(trace_row0[12], to_element(0));
-//         assert_eq!(trace_row1[12], to_element(3));
-//     }
-
-//     #[test]
-//     fn test_empty_inputs() {
-//         let source = "read";
-//         let program = Program::compile(source).unwrap();
-//         let error = Processor::run(program, empty_program_inputs()).unwrap_err();
-
-//         assert_eq!(
-//             format!("{error}"),
-//             format!("{}", StackError::empty_inputs(1))
-//         );
-//     }
-// }
-
-// mod read2 {
-
-//     use super::*;
-
-//     #[test]
-//     fn test_trace() {
-//         let source = "read2";
-//         let program = Program::compile(source).unwrap();
-//         let inputs = program_inputs();
-//         let input_ct = inputs.get_secret()[0].ciphertext().to_vec();
-//         let processor = Processor::run(program, inputs).unwrap();
-//         let trace = processor.trace();
-//         let trace_row0 = trace_state(0, &trace);
-//         let trace_row1 = trace_state(1, &trace);
-
-//         let mut state = vec![ZERO; 4];
-//         let op = Operation::read2();
-
-//         rescue::apply_round(&mut state, op.code(), op.value(), 0);
-
-//         assert_eq!(trace_row0[0], to_element(0));
-//         assert_eq!(trace_row1[0], to_element(1));
-
-//         assert_eq!(trace_row0[1..6], to_elements(&[0, 1, 0, 0, 1]));
-
-//         assert_eq!(trace_row0[6], to_element(1));
-
-//         assert_eq!(trace_row1[7..11], state);
-
-//         assert_eq!(trace_row0[11], to_element(0));
-//         assert_eq!(trace_row1[11], to_element(5));
-
-//         assert_eq!(trace_row0[12..17], to_elements(&[0, 0, 0, 0, 0]));
-//         assert_eq!(trace_row1[12..17], input_ct);
-//     }
-
-//     #[test]
-//     fn test_empty_inputs() {
-//         let source = "read2";
-//         let program = Program::compile(source).unwrap();
-//         let error = Processor::run(program, empty_program_inputs()).unwrap_err();
-
-//         assert_eq!(
-//             format!("{error}"),
-//             format!("{}", StackError::empty_inputs(1))
-//         );
-//     }
-// }
-
-// mod add {
-
-//     use crypto::Rescue128;
-
-//     use super::*;
-
-//     #[test]
-//     fn test_trace() {
-//         let source = "push.1\npush.2\nadd";
-//         let program = Program::compile(source).unwrap();
-//         let code = program.get_code().to_vec();
-//         let inputs = program_inputs();
-//         let processor = Processor::run(program, inputs).unwrap();
-//         let trace = processor.trace();
-//         let trace_row9 = trace_state(9, &trace);
-//         let trace_row10 = trace_state(10, &trace);
-
-//         let mut sponge = Rescue128::new();
-
-//         for op in code[0..10].iter() {
-//             sponge.update(op.code(), op.value());
-//         }
-
-//         assert_eq!(trace_row9[0], to_element(9));
-//         assert_eq!(trace_row10[0], to_element(10));
-
-//         assert_eq!(trace_row9[1..6], to_elements(&[0, 0, 0, 1, 0]));
-
-//         assert_eq!(trace_row9[6], to_element(1));
-
-//         assert_eq!(trace_row10[7..11], sponge.state());
-
-//         assert_eq!(trace_row9[11], to_element(2));
-//         assert_eq!(trace_row10[11], to_element(1));
-
-//         assert_eq!(trace_row10[12], to_element(3));
-//     }
-
-//     #[test]
-//     fn test_stack_underflow() {
-//         let source = "push.1\nadd";
-//         let program = Program::compile(source).unwrap();
-//         let error = Processor::run(program, empty_program_inputs()).unwrap_err();
-
-//         assert_eq!(
-//             format!("{error}"),
-//             format!("{}", StackError::stack_underflow("add", 2))
-//         );
-//     }
-// }
-
-// mod mul {
-
-//     use crypto::Rescue128;
-
-//     use super::*;
-
-//     #[test]
-//     fn test_trace() {
-//         let source = "push.1\npush.2\nmul";
-//         let program = Program::compile(source).unwrap();
-//         let code = program.get_code().to_vec();
-//         let inputs = program_inputs();
-//         let processor = Processor::run(program, inputs).unwrap();
-//         let trace = processor.trace();
-//         let trace_row9 = trace_state(9, &trace);
-//         let trace_row10 = trace_state(10, &trace);
-
-//         let mut sponge = Rescue128::new();
-
-//         for op in code[0..10].iter() {
-//             sponge.update(op.code(), op.value());
-//         }
-
-//         assert_eq!(trace_row9[0], to_element(9));
-//         assert_eq!(trace_row10[0], to_element(10));
-
-//         assert_eq!(trace_row9[1..6], to_elements(&[1, 0, 0, 1, 0]));
-
-//         assert_eq!(trace_row9[6], to_element(1));
-
-//         assert_eq!(trace_row10[7..11], sponge.state());
-
-//         assert_eq!(trace_row9[11], to_element(2));
-//         assert_eq!(trace_row10[11], to_element(1));
-
-//         assert_eq!(trace_row10[12], to_element(2));
-//     }
-
-//     #[test]
-//     fn test_stack_underflow() {
-//         let source = "push.1\nmul";
-//         let program = Program::compile(source).unwrap();
-//         let error = Processor::run(program, empty_program_inputs()).unwrap_err();
-
-//         assert_eq!(
-//             format!("{error}"),
-//             format!("{}", StackError::stack_underflow("mul", 2))
-//         );
-//     }
-// }
-
-// mod sadd {
-
-//     use crypto::Rescue128;
-
-//     use super::*;
-
-//     #[test]
-//     fn test_trace() {
-//         let source = "read2\nread\nsadd";
-//         let program = Program::compile(source).unwrap();
-//         let code = program.get_code().to_vec();
-//         let inputs = program_inputs();
-//         let processor = Processor::run(program, inputs).unwrap();
-//         let trace = processor.trace();
-//         let trace_row9 = trace_state(9, &trace);
-//         let trace_row10 = trace_state(10, &trace);
-
-//         let mut sponge = Rescue128::new();
-
-//         for op in code[0..10].iter() {
-//             sponge.update(op.code(), op.value());
-//         }
-
-//         assert_eq!(trace_row9[0], to_element(9));
-//         assert_eq!(trace_row10[0], to_element(10));
-
-//         assert_eq!(trace_row9[1..6], to_elements(&[1, 0, 0, 1, 0]));
-
-//         assert_eq!(trace_row9[6], to_element(1));
-
-//         assert_eq!(trace_row10[7..11], sponge.state());
-
-//         assert_eq!(trace_row9[11], to_element(2));
-//         assert_eq!(trace_row10[11], to_element(1));
-
-//         assert_eq!(trace_row10[12], to_element(2));
-//     }
-
-//     #[test]
-//     fn test_stack_underflow() {
-//         let source = "read2\nsadd";
-//         let program = Program::compile(source).unwrap();
-//         let error = Processor::run(program, program_inputs()).unwrap_err();
-
-//         assert_eq!(
-//             format!("{error}"),
-//             format!("{}", StackError::stack_underflow("sadd", 2))
-//         );
-//     }
-// }
+    assert_eq!(trace_row31[11], to_element(1));
+    assert_eq!(trace_row31[12], to_element(8));
+}
 
 fn server_key() -> ServerKey {
     let plaintext_modulus: u32 = 8u32;

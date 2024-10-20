@@ -19,6 +19,7 @@ mod tests;
 
 const PUSH_OP_ALIGNMENT: usize = 8;
 
+#[derive(Debug)]
 pub struct Program {
     code: Vec<Operation>,
     hash: Hash,
@@ -125,18 +126,6 @@ fn compute_padding(length: usize) -> usize {
 }
 
 impl std::fmt::Display for Program {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}{}", self.code[0].op_code(), self.code[0].op_value())?;
-
-        for i in 1..self.code.len() {
-            write!(f, " {}{}", self.code[i].op_code(), self.code[i].op_value())?;
-        }
-
-        Ok(())
-    }
-}
-
-impl std::fmt::Debug for Program {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{}{}", self.code[0].op_code(), self.code[0].op_value())?;
 

@@ -68,14 +68,19 @@ impl Processor {
         Ok(processor)
     }
 
-    pub fn trace(self) -> Vec<Vec<BaseElement>> {
+    pub fn trace(self) -> Result<Vec<Vec<BaseElement>>, ProcessorError> {
         let mut trace = Vec::new();
 
         let trace_length = (self.chiplets.trace_length() + NUM_RAND_ROWS).next_power_of_two();
 
         trace.extend(self.system.into_trace(trace_length));
         trace.extend(self.decoder.into_trace(trace_length));
-        trace.extend(self.chiplets.into_trace(trace_length));
+
+        match self.chiplets.into_trace(trace_length) {
+            Ok(chiplets_trace) => trace.extend(chiplets_trace),
+            Err(err) => return Err(ProcessorError::Chiplets(err)),
+        };
+
         trace.extend(self.stack.into_trace(trace_length));
 
         let mut rng = rand::thread_rng();
@@ -86,7 +91,7 @@ impl Processor {
             *last = BaseElement::try_from(rng.gen_range(1..=u128::MAX)).unwrap();
         }
 
-        trace
+        Ok(trace)
     }
 
     pub fn get_stack_output(&self) -> Vec<BaseElement> {

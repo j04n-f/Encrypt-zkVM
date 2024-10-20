@@ -54,6 +54,13 @@ impl ChipletsError {
             step,
         }
     }
+
+    pub fn invalid_trace_length(expected: usize, current: usize, step: usize) -> ChipletsError {
+        ChipletsError {
+            message: format!("trace length should be a multiple of {expected}, but was {current}"),
+            step,
+        }
+    }
 }
 
 impl std::fmt::Display for ChipletsError {

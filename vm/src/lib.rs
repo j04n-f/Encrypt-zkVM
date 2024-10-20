@@ -17,7 +17,7 @@ pub fn prove(program: Program, inputs: ProgramInputs) -> Result<(Hash, Vec<BaseE
 
     let stack_output = processor.get_stack_output();
 
-    let trace = TraceTable::init(processor.trace());
+    let trace = TraceTable::init(processor.trace()?);
 
     let options = ProofOptions::new(32, 8, 0, FieldExtension::None, 8, 127);
 

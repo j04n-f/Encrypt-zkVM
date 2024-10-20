@@ -1,5 +1,8 @@
 use super::{errors::ChipletsError, HashOperation, OpCode, Operation, ONE, ZERO};
-use crypto::{rescue::STATE_WIDTH, Rescue128};
+use crypto::{
+    rescue::{CYCLE_LENGTH, STATE_WIDTH},
+    Rescue128,
+};
 use winterfell::math::fields::f128::BaseElement;
 
 pub struct Chiplets {
@@ -34,7 +37,11 @@ impl Chiplets {
         self.trace_length
     }
 
-    pub fn into_trace(mut self, trace_length: usize) -> Vec<Vec<BaseElement>> {
+    pub fn into_trace(mut self, trace_length: usize) -> Result<Vec<Vec<BaseElement>>, ChipletsError> {
+        if self.clk % CYCLE_LENGTH != 0 {
+            return Err(ChipletsError::invalid_trace_length(CYCLE_LENGTH, self.clk, self.clk));
+        }
+
         for col in self.sponge_trace.iter_mut() {
             col.resize(self.clk + 1, ZERO);
             col.resize(trace_length, col[self.clk]);
@@ -56,7 +63,7 @@ impl Chiplets {
         registers.push(h2);
         registers.push(h3);
 
-        registers
+        Ok(registers)
     }
 
     pub fn hash_op(&mut self, op: &Operation) -> Result<(), ChipletsError> {
