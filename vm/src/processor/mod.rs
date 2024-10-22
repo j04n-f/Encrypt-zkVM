@@ -94,10 +94,10 @@ impl Processor {
         Ok(trace)
     }
 
-    pub fn get_stack_output(&self) -> Vec<BaseElement> {
+    pub fn get_stack_output(&self) -> [BaseElement; MAX_STACK_DEPTH] {
         // trace computation does not change the clock value
         // clock value is always set to the last stack row
-        self.stack.current_state()
+        self.stack.current_stack_state()
     }
 
     fn execute_op(&mut self, op: &Operation) -> Result<(), ProcessorError> {

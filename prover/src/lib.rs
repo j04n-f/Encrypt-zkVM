@@ -17,7 +17,7 @@ type Blake3 = Blake3_256<BaseElement>;
 pub struct ExecutionProver {
     options: ProofOptions,
     program_hash: [BaseElement; 2],
-    stack_outputs: Vec<BaseElement>,
+    stack_outputs: [BaseElement; 16],
     server_key: ServerKey,
 }
 
@@ -25,12 +25,12 @@ impl ExecutionProver {
     pub fn new(
         options: ProofOptions,
         program_hash: [BaseElement; 2],
-        stack_outputs: &[BaseElement],
+        stack_outputs: [BaseElement; 16],
         server_key: ServerKey,
     ) -> Self {
         Self {
             options,
-            stack_outputs: stack_outputs.to_vec(),
+            stack_outputs,
             program_hash,
             server_key,
         }
@@ -48,7 +48,7 @@ impl Prover for ExecutionProver {
         DefaultConstraintEvaluator<'a, ProcessorAir, E>;
 
     fn get_pub_inputs(&self, _trace: &Self::Trace) -> PublicInputs {
-        PublicInputs::new(self.program_hash, self.stack_outputs.clone(), self.server_key.clone())
+        PublicInputs::new(self.program_hash, self.stack_outputs, self.server_key.clone())
     }
 
     // We'll use the default trace low-degree extension.

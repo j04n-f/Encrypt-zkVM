@@ -1,4 +1,7 @@
-use fhe::{FheElement, ServerKey};
+mod constrains;
+mod flags;
+
+use fhe::ServerKey;
 use winterfell::{
     math::{fields::f128::BaseElement, FieldElement, ToElements},
     Air, AirContext, Assertion, EvaluationFrame, ProofOptions, TraceInfo, TransitionConstraintDegree,
@@ -6,19 +9,19 @@ use winterfell::{
 
 use crypto::{
     rescue,
-    rescue::{CYCLE_LENGTH, DIGEST_SIZE, STATE_WIDTH},
+    rescue::{CYCLE_LENGTH, DIGEST_SIZE},
 };
 
 pub struct PublicInputs {
     program_hash: [BaseElement; DIGEST_SIZE],
-    stack_outputs: Vec<BaseElement>,
+    stack_outputs: [BaseElement; 16],
     server_key: ServerKey,
 }
 
 impl PublicInputs {
     pub fn new(
         program_hash: [BaseElement; DIGEST_SIZE],
-        stack_outputs: Vec<BaseElement>,
+        stack_outputs: [BaseElement; 16],
         server_key: ServerKey,
     ) -> PublicInputs {
         PublicInputs {
@@ -43,7 +46,7 @@ impl ToElements<BaseElement> for PublicInputs {
 pub struct ProcessorAir {
     context: AirContext<BaseElement>,
     program_hash: [BaseElement; DIGEST_SIZE],
-    stack_outputs: Vec<BaseElement>,
+    stack_outputs: [BaseElement; 16],
     server_key: ServerKey,
 }
 
@@ -61,30 +64,30 @@ impl Air for ProcessorAir {
 
     fn new(trace_info: TraceInfo, pub_inputs: PublicInputs, options: ProofOptions) -> Self {
         let degrees = vec![
-            TransitionConstraintDegree::new(1),
-            TransitionConstraintDegree::new(5),
-            TransitionConstraintDegree::new(2),
-            TransitionConstraintDegree::new(6),
-            TransitionConstraintDegree::new(6),
-            TransitionConstraintDegree::new(7),
-            TransitionConstraintDegree::new(7),
-            TransitionConstraintDegree::new(6),
-            TransitionConstraintDegree::new(6),
-            TransitionConstraintDegree::new(6),
-            TransitionConstraintDegree::new(6),
-            TransitionConstraintDegree::with_cycles(4, vec![CYCLE_LENGTH]),
-            TransitionConstraintDegree::with_cycles(7, vec![CYCLE_LENGTH]),
-            TransitionConstraintDegree::with_cycles(4, vec![CYCLE_LENGTH]),
-            TransitionConstraintDegree::with_cycles(4, vec![CYCLE_LENGTH]),
-            TransitionConstraintDegree::with_cycles(2, vec![CYCLE_LENGTH]),
-            TransitionConstraintDegree::with_cycles(2, vec![CYCLE_LENGTH]),
-            TransitionConstraintDegree::with_cycles(2, vec![CYCLE_LENGTH]),
-            TransitionConstraintDegree::with_cycles(2, vec![CYCLE_LENGTH]),
+            TransitionConstraintDegree::new(1),                             // clk
+            TransitionConstraintDegree::new(5),                             // stack depth
+            TransitionConstraintDegree::new(2),                             // shr or shl
+            TransitionConstraintDegree::new(6),                             // add
+            TransitionConstraintDegree::new(6),                             // sadd
+            TransitionConstraintDegree::new(6),                             // add2
+            TransitionConstraintDegree::new(7),                             // mul
+            TransitionConstraintDegree::new(7),                             // smul
+            TransitionConstraintDegree::new(6),                             // push
+            TransitionConstraintDegree::new(6),                             // read
+            TransitionConstraintDegree::new(6),                             // read2
+            TransitionConstraintDegree::new(6),                             // noop
+            TransitionConstraintDegree::with_cycles(4, vec![CYCLE_LENGTH]), // hash[0] round 0-14
+            TransitionConstraintDegree::with_cycles(7, vec![CYCLE_LENGTH]), // hash[1] round 0-14
+            TransitionConstraintDegree::with_cycles(4, vec![CYCLE_LENGTH]), // hash[2] round 0-14
+            TransitionConstraintDegree::with_cycles(4, vec![CYCLE_LENGTH]), // hash[3] round 0-14
+            TransitionConstraintDegree::with_cycles(2, vec![CYCLE_LENGTH]), // hash[0] round 14-16
+            TransitionConstraintDegree::with_cycles(2, vec![CYCLE_LENGTH]), // hash[1] round 14-16
+            TransitionConstraintDegree::with_cycles(2, vec![CYCLE_LENGTH]), // hash[2] round 14-16
+            TransitionConstraintDegree::with_cycles(2, vec![CYCLE_LENGTH]), // hash[3] round 14-16
         ];
 
-        // allow to transition exemptions
-        // last row has random values
         // to improve the column degree computation
+        // set transitions exemptions to allow random values on last row
         let air_context = AirContext::new(trace_info, degrees, 22, options).set_num_transition_exemptions(2);
 
         ProcessorAir {
@@ -101,142 +104,85 @@ impl Air for ProcessorAir {
         periodic_values: &[E],
         result: &mut [E],
     ) {
-        let b0 = frame.current()[5]; // Shr
-        let b1 = frame.current()[4]; // Shl
-        let b2 = frame.current()[3]; // Op
-        let b3 = frame.current()[2]; // Op
-        let b4 = frame.current()[1]; // Op
+        // increase clk
+        // clk' - (clk + 1) = 0 || deegre 1
+        result[0] = constrains::enforce_clock_increase(frame);
 
-        // Increase clk
-        // 0 = clk' - (clk + 1) || deegre 1
-        result[0] = frame.next()[0] - (frame.current()[0] + E::ONE);
+        // increse or decrese stack depth by one or five
+        // d' - d - flag_shr + flag_shr - (flag_read2 + flag_add2) * 4 = 0 || deegre 5
+        result[1] = constrains::enforce_stack_depth(frame);
 
-        // Stack Depth || deegre 5
-        result[1] = (frame.next()[11] - frame.current()[11] - b0 + b1)
-            - b0 * not_(b1) * not_(b2) * b3 * not_(b4) * E::from(4u8)
-            + not_(b0) * b1 * not_(b2) * b3 * b4 * E::from(4u8);
+        // ensure shift is a binary operation
+        // flag_shl * flag_shr = 0 || degree 2
+        result[2] = constrains::enforce_stack_shift(frame);
 
-        // Shr or Shl || deegre 2
-        result[2] = b0 * b1;
+        // add the two top stack elements
+        // s0' - (s1 + s0) = 0 || degree 6
+        result[3] = constrains::enforce_add(frame);
 
-        // Add
-        // 0 = b0 * (1 - b1) * (1 - b2) * b3 * (s0' - (s0 + s1)) || degree 6
-        result[3] = not_(b0)
-            * b1
-            * not_(b2)
-            * not_(b3)
-            * not_(b4)
-            * (frame.next()[12] - (frame.current()[12] + frame.current()[13]));
+        // add the top scalar and ciphertext stack elements
+        // s[0..5]' - (s0 + s[1..6]) = 0 || degree 6
+        result[4] = constrains::enforce_sadd(frame, &self.server_key);
 
-        // SAdd
-        let value = FheElement::new(&frame.current()[13..18]);
-        let output = self.server_key.scalar_add(&frame.current()[12], &value);
-        let ct = output.ciphertext();
+        // add the top ciphertext stack elements
+        // s[0..5]' - (s0[0..5] + s[5..10]) = 0 || degree 6
+        result[5] = constrains::enforce_add2(frame, &self.server_key);
 
-        result[4] = not_(b0)
-            * b1
-            * not_(b2)
-            * b3
-            * not_(b4)
-            * (frame.next()[12] + frame.next()[13] + frame.next()[14] + frame.next()[15] + frame.next()[16]
-                - ct[0]
-                - ct[1]
-                - ct[2]
-                - ct[3]
-                - ct[4]);
+        // multiply the two top stack elements
+        // s0' - (s1 * s0) = 0 || degree 7
+        result[6] = constrains::enforce_mul(frame);
 
-        // Mul
-        // 0 = b0 * (1 - b1) * (1 - b2) * (1 - b3) * (s0' - s0 * s1) || degree 7
-        result[5] =
-            not_(b0) * b1 * not_(b2) * not_(b3) * b4 * (frame.next()[12] - frame.current()[12] * frame.current()[13]);
+        // multiply the top scalar and ciphertext stack elements
+        // s[0..5]' - (s0 * s[1..6]) = 0 || degree 7
+        result[7] = constrains::enforce_smul(frame, &self.server_key);
 
-        // SMul
-        let value = FheElement::new(&frame.current()[13..18]);
-        let output = self.server_key.scalar_mul(&frame.current()[12], &value);
-        let ct = output.ciphertext();
-
-        result[6] = not_(b0)
-            * b1
-            * b2
-            * not_(b3)
-            * not_(b4)
-            * (frame.next()[12] + frame.next()[13] + frame.next()[14] + frame.next()[15] + frame.next()[16]
-                - ct[0]
-                - ct[1]
-                - ct[2]
-                - ct[3]
-                - ct[4]);
-
-        // Push
-        // 0 = b0 * (1 - b1) * b2 * (1 - b3) * (s1' - s0) || degree 6
+        // push a value the top of the stack
+        // (s1' - s0) = 0 || degree 6
         // Pushed value onto the stack is injected (enforced) into sponge state
-        result[7] = b0 * not_(b1) * not_(b2) * not_(b3) * not_(b4) * (frame.next()[13] - frame.current()[12]);
+        result[8] = constrains::enforce_push(frame);
 
-        // Read
-        // 0 = b0 * (1 - b1) * b2 * b3 * (s1' - s0) || degree 6
-        result[8] = b0 * not_(b1) * not_(b2) * not_(b3) * b4 * (frame.next()[13] - frame.current()[12]);
+        // read an input and push to to the top of the stach
+        // (s1' - s0) = 0 || degree 6
+        result[9] = constrains::enforce_read(frame);
 
-        // Read2
-        // 0 = b0 * b1 * b2 * b3 * (s1' - s0) || degree 6
-        result[9] = b0 * not_(b1) * not_(b2) * b3 * not_(b4) * (frame.next()[17] - frame.current()[12]);
+        // read2 a ciphertext and push to to the top of the stach
+        // (s1' - s0) = 0 || degree 6
+        result[10] = constrains::enforce_read2(frame);
 
-        // Noop
-        // 0 = (1 - b0) * (s0' - s0) || degree 6
-        result[10] = not_(b0) * not_(b1) * not_(b2) * not_(b3) * not_(b4) * (frame.next()[12] - frame.current()[12]);
+        // copy the stack state
+        // (s0' - s0) = 0 || degree 6
+        result[11] = constrains::enforce_noop(frame);
 
         // Rescue-Prime
         let hash_flag = periodic_values[0];
         let ark = &periodic_values[1..];
 
-        let push_flag = b0 * not_(b1) * not_(b2) * not_(b3) * not_(b4);
+        // apply hash round
+        constrains::enforce_hash_round(frame, hash_flag, ark, &mut result[12..16]);
 
-        let mut step0 = frame.current()[7..11].to_vec();
-        rescue::apply_sbox(&mut step0);
-        rescue::apply_mds(&mut step0);
-        for i in 0..STATE_WIDTH {
-            step0[i] += ark[i];
-        }
-
-        step0[0] += b0 * E::from(16u8) + b1 * E::from(8u8) + b2 * E::from(4u8) + b3 * E::from(2u8) + b4;
-        step0[1] += frame.next()[12] * push_flag;
-
-        let mut step1 = frame.next()[7..11].to_vec();
-        for i in 0..STATE_WIDTH {
-            step1[i] -= ark[STATE_WIDTH + i];
-        }
-        rescue::apply_inv_mds(&mut step1);
-        rescue::apply_sbox(&mut step1);
-
-        result[11] = (step1[0] - step0[0]) * hash_flag * frame.current()[6];
-        result[12] = (step1[1] - step0[1]) * hash_flag * frame.current()[6];
-        result[13] = (step1[2] - step0[2]) * hash_flag * frame.current()[6];
-        result[14] = (step1[3] - step0[3]) * hash_flag * frame.current()[6];
-
-        result[15] = (frame.next()[7] - frame.current()[7]) * not_(hash_flag) * frame.current()[6];
-        result[16] = (frame.next()[8] - frame.current()[8]) * not_(hash_flag) * frame.current()[6];
-        result[17] = frame.next()[9] * not_(hash_flag) * frame.current()[6];
-        result[18] = frame.next()[10] * not_(hash_flag) * frame.current()[6];
+        // copy hash state and reset capacity values to 0
+        constrains::enforce_hash_copy(frame, hash_flag, &mut result[16..20]);
     }
 
     fn get_assertions(&self) -> Vec<Assertion<Self::BaseField>> {
         let mut assertions = Vec::with_capacity(18);
-        // clk[0] = 0
+        // initial clock value is 0
         assertions.push(Assertion::single(0, 0, Self::BaseField::ZERO));
 
-        // depth[0] = 0
+        // initial stack depth is 0
         assertions.push(Assertion::single(11, 0, Self::BaseField::ZERO));
 
         let last_step = self.last_step();
 
-        // Initial Hash == 0
-        // Final Hash == Program Hash
+        // initial hash state is 0
+        // final hash state equals to program hash
         for i in 0..2 {
             assertions.push(Assertion::single(i + 7, 0, Self::BaseField::ZERO));
             assertions.push(Assertion::single(i + 7, last_step, self.program_hash[i]));
         }
 
-        // Initial Stack == 0
-        // Final Stack == Stack Output
+        // initials stack state is 0
+        // final stack state equals to output
         for i in 0..8 {
             assertions.push(Assertion::single(i + 12, 0, Self::BaseField::ZERO));
             assertions.push(Assertion::single(i + 12, last_step, self.stack_outputs[i]));
@@ -274,7 +220,3 @@ const CYCLE_MASK: [BaseElement; CYCLE_LENGTH] = [
     BaseElement::ZERO,
     BaseElement::ZERO,
 ];
-
-fn not_<E: FieldElement + From<<ProcessorAir as Air>::BaseField>>(bit: E) -> E {
-    E::ONE - bit
-}

@@ -61,7 +61,7 @@ fn main() {
 
         let (hash, output, proof) = vm::prove(program, inputs).unwrap();
 
-        let output = OutputData::new(hash, proof, &output);
+        let output = OutputData::new(hash, proof, output);
 
         output.to_bytes()
     };
@@ -82,7 +82,7 @@ fn main() {
 
     verify::<ProcessorAir, Blake3, DefaultRandomCoin<Blake3>>(
         results.proof().clone(),
-        PublicInputs::new(results.hash().to_elements(), results.output().to_vec(), client_key),
+        PublicInputs::new(results.hash().to_elements(), results.output(), client_key),
         &min_opts,
     )
     .unwrap()

@@ -96,7 +96,7 @@ impl ServerKey {
             .iter()
             .zip(value1.ciphertext().iter())
             .take(self.lwe_size())
-            .map(|(ct_value0, ct_value1)| ct_value0.add(*ct_value1))
+            .map(|(&ct_value0, &ct_value1)| ct_value0 + ct_value1)
             .collect::<Vec<E>>();
         FheElement::new(&ciphertext)
     }
@@ -108,17 +108,17 @@ impl ServerKey {
             .iter()
             .zip(trivial_scalar.ciphertext().iter())
             .take(self.lwe_size())
-            .map(|(ct_value, ct_trivial)| ct_value.add(*ct_trivial))
+            .map(|(&ct_value, &ct_trivial)| ct_value + ct_trivial)
             .collect::<Vec<E>>();
         FheElement::new(&ciphertext)
     }
 
-    pub fn scalar_mul<E: FieldElement + Clone>(&self, scalar: &E, value: &FheElement<E>) -> FheElement<E> {
+    pub fn scalar_mul<E: FieldElement + Clone>(&self, &scalar: &E, value: &FheElement<E>) -> FheElement<E> {
         let ciphertext = value
             .ciphertext()
             .iter()
             .take(self.lwe_size())
-            .map(|ct_value| *ct_value * *scalar)
+            .map(|&ct_value| ct_value * scalar)
             .collect::<Vec<E>>();
         FheElement::new(&ciphertext)
     }

@@ -69,12 +69,12 @@ impl Stack {
         Ok(())
     }
 
-    pub fn current_state(&self) -> Vec<BaseElement> {
-        let mut state = Vec::with_capacity(self.registers.len());
-        for i in 0..self.registers.len() {
+    pub fn current_stack_state(&self) -> [BaseElement; MAX_STACK_DEPTH] {
+        let mut state = Vec::with_capacity(MAX_STACK_DEPTH);
+        for i in 0..MAX_STACK_DEPTH {
             state.push(self.registers[i][self.clk]);
         }
-        state
+        state.try_into().unwrap()
     }
 
     pub fn into_trace(mut self, trace_length: usize) -> Vec<Vec<BaseElement>> {

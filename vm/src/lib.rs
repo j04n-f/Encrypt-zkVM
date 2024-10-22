@@ -10,7 +10,7 @@ use processor::{Processor, ProcessorError};
 
 use crypto::rescue::Hash;
 
-pub fn prove(program: Program, inputs: ProgramInputs) -> Result<(Hash, Vec<BaseElement>, Proof), ProcessorError> {
+pub fn prove(program: Program, inputs: ProgramInputs) -> Result<(Hash, [BaseElement; 16], Proof), ProcessorError> {
     let program_hash = program.get_hash();
     let secret_key = inputs.get_server_key();
     let processor = Processor::run(program, inputs)?;
@@ -21,7 +21,7 @@ pub fn prove(program: Program, inputs: ProgramInputs) -> Result<(Hash, Vec<BaseE
 
     let options = ProofOptions::new(32, 8, 0, FieldExtension::None, 8, 127);
 
-    let prover = ExecutionProver::new(options, program_hash.to_elements(), &stack_output, secret_key);
+    let prover = ExecutionProver::new(options, program_hash.to_elements(), stack_output, secret_key);
 
     let proof = prover.prove(trace).unwrap();
 

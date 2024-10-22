@@ -73,15 +73,15 @@ impl Deserializable for InputData {
 pub struct OutputData {
     hash: Hash,
     proof: Proof,
-    output: Vec<BaseElement>,
+    output: [BaseElement; 16],
 }
 
 impl OutputData {
-    pub fn new(hash: Hash, proof: Proof, output: &[BaseElement]) -> OutputData {
+    pub fn new(hash: Hash, proof: Proof, output: [BaseElement; 16]) -> OutputData {
         OutputData {
             hash,
             proof,
-            output: output.to_vec(),
+            output,
         }
     }
 
@@ -93,8 +93,8 @@ impl OutputData {
         &self.proof
     }
 
-    pub fn output(&self) -> &[BaseElement] {
-        &self.output
+    pub fn output(&self) -> [BaseElement; 16] {
+        self.output
     }
 }
 
@@ -116,12 +116,17 @@ impl Deserializable for OutputData {
         let proof = Proof::read_from(source)?;
         let output_len = source.read_usize()?;
 
-        let mut output = Vec::new();
+        let mut out = Vec::new();
 
         for _ in 0..output_len {
-            output.push(BaseElement::read_from(source)?);
+            out.push(BaseElement::read_from(source)?);
         }
 
-        Ok(OutputData { hash, proof, output })
+        match out.try_into() {
+            Ok(output) => Ok(OutputData { hash, proof, output }),
+            Err(_) => Err(DeserializationError::UnknownError(
+                "expected an array containing f128::BaseElement of length 16".to_string(),
+            )),
+        }
     }
 }
