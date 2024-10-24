@@ -12,6 +12,9 @@ use crypto::{
     rescue::{CYCLE_LENGTH, DIGEST_SIZE},
 };
 
+#[cfg(test)]
+mod tests;
+
 pub struct PublicInputs {
     program_hash: [BaseElement; DIGEST_SIZE],
     stack_outputs: [BaseElement; 16],

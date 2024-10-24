@@ -78,11 +78,7 @@ pub struct OutputData {
 
 impl OutputData {
     pub fn new(hash: Hash, proof: Proof, output: [BaseElement; 16]) -> OutputData {
-        OutputData {
-            hash,
-            proof,
-            output,
-        }
+        OutputData { hash, proof, output }
     }
 
     pub fn hash(&self) -> &Hash {

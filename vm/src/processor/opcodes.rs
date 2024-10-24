@@ -39,7 +39,7 @@ pub enum OpCode {
     Mul   = 0b01_001,    // shift-left: 1
     SAdd  = 0b01_010,    // shift-left: 1
     SMul  = 0b01_100,    // shift-left: 1
-    Add2 = 0b01_011,     // shift-left: 5
+    Add2  = 0b01_011,    // shift-left: 5
 }
 
 impl std::fmt::Display for OpCode {

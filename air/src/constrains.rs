@@ -6,8 +6,8 @@ use winterfell::{
 };
 
 use crate::flags::{
-    is_add, is_add2, is_mul, is_noop, is_push, is_read, is_read2, is_sadd, is_smul, not_, opcode_to_element,
-    EvaluationFrameExtBits,
+    is_add, is_add2, is_mul, is_noop, is_push, is_read, is_read2, is_sadd, is_shl, is_shr, is_smul, not_,
+    opcode_to_element,
 };
 
 trait EvaluationFrameExt<E: FieldElement> {
@@ -97,11 +97,11 @@ pub fn enforce_clock_increase<E: FieldElement>(frame: &EvaluationFrame<E>) -> E 
 }
 
 pub fn enforce_stack_shift<E: FieldElement>(frame: &EvaluationFrame<E>) -> E {
-    frame.b0() * frame.b1()
+    is_shr(frame) * is_shl(frame)
 }
 
 pub fn enforce_stack_depth<E: FieldElement>(frame: &EvaluationFrame<E>) -> E {
-    (frame.stack_depth_next() - frame.stack_depth() - frame.b0() + frame.b1()) - is_read2(frame) * E::from(4u8)
+    (frame.stack_depth_next() - frame.stack_depth() - is_shr(frame) + is_shl(frame)) - is_read2(frame) * E::from(4u8)
         + is_add2(frame) * E::from(4u8)
 }
 
@@ -193,7 +193,7 @@ pub fn enforce_hash_round<E: FieldElement + From<BaseElement>>(
     }
 
     step0[0] += opcode_to_element(frame);
-    step0[1] += frame.stack_item_next(12) * is_push(frame);
+    step0[1] += frame.stack_item_next(0) * is_push(frame);
 
     let mut step1 = frame.hash_next().to_vec();
     for i in 0..STATE_WIDTH {

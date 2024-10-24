@@ -34,6 +34,14 @@ impl<E: FieldElement> EvaluationFrameExtBits<E> for &EvaluationFrame<E> {
     }
 }
 
+pub fn is_shr<E: FieldElement>(frame: &EvaluationFrame<E>) -> E {
+    frame.b0()
+}
+
+pub fn is_shl<E: FieldElement>(frame: &EvaluationFrame<E>) -> E {
+    frame.b1()
+}
+
 pub fn is_add<E: FieldElement>(frame: &EvaluationFrame<E>) -> E {
     not_(frame.b0()) * frame.b1() * not_(frame.b2()) * not_(frame.b3()) * not_(frame.b4())
 }
