@@ -13,11 +13,8 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Clippy Check
-      run: cargo clippy --all-targets --all-features
-
-    - name: Format Check
-      run: cargo fmt --check
+    - name: Pre-commit
+      uses: pre-commit/action@v3.0.1
 
     - name: Build
       run: cargo build --verbose
