@@ -150,9 +150,9 @@ Push.1 Push.2 Add
 | B0 | B1 | B1 | B3 | B4 |
 | -- | -- | -- | -- | -- |
 | 0  | 0  | 0  | 0  | 1  |
-| 1  | 1  | 0  | 0  | 1  |
+| 0  | 0  | 0  | 0  | 1  |
 | 0  | 0  | 0  | 1  | 0  |
-| 1  | 3  | 0  | 0  | 0  |
+| 0  | 0  | 0  | 0  | 0  |
 
 #### Chiplets
 ---
@@ -193,8 +193,8 @@ The AIR assertions are the following:
 - Stack Depth value at 0 equals 0
 - Stack Registries at 0 equal 0
 - Stack Registries at length() - 1 equal to Outputs
-- Hasg values at 0 equal 0
-- Hasg values at length() - 1 equal to Program Hash
+- Hash values at 0 equal 0
+- Hash values at length() - 1 equal to Program Hash
 
 #### Transitions
 ---
