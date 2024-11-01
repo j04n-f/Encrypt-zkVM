@@ -317,11 +317,9 @@ let clear_result = client_key.decrypt(&result);
 
 let min_opts = AcceptableOptions::MinConjecturedSecurity(95);
 
-verify::<ProcessorAir, Blake3, DefaultRandomCoin<Blake3>>(
-  results.proof().clone(),
-    PublicInputs::new(results.hash().to_elements(), results.output(), client_key),
-    &min_opts,
-  ).unwrap()
+let inputs = PublicInputs::new(results.hash().to_elements(), results.output(), client_key);
+
+verify::<ProcessorAir, Blake3, DefaultRandomCoin<Blake3>>(results.proof(), inputs, &min_opts).unwrap()
 ```
 
 ## References

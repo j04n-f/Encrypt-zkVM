@@ -95,11 +95,11 @@ impl Program {
         })
     }
 
-    pub fn get_code(&self) -> &[Operation] {
+    pub fn code(&self) -> &[Operation] {
         &self.code
     }
 
-    pub fn get_hash(&self) -> Hash {
+    pub fn hash(&self) -> Hash {
         self.hash
     }
 }

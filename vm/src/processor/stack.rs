@@ -10,27 +10,27 @@ use std::ops::{Add, Mul};
 
 use super::MAX_STACK_DEPTH;
 
-pub struct Stack {
+pub struct Stack<'a> {
     clk: usize,
     registers: Vec<Vec<BaseElement>>,
     helpers: Vec<Vec<BaseElement>>,
     tape_a: Vec<u8>,
     tape_b: Vec<FheUInt8>,
     depth: usize,
-    server_key: ServerKey,
+    server_key: &'a ServerKey,
     trace_length: usize,
 }
 
-impl Stack {
-    pub fn new(inputs: &ProgramInputs, init_trace_length: usize) -> Stack {
+impl<'a> Stack<'a> {
+    pub fn new(inputs: &'a ProgramInputs, init_trace_length: usize) -> Self {
         let registers: Vec<Vec<BaseElement>> = (0..MAX_STACK_DEPTH).map(|_| vec![ZERO; init_trace_length]).collect();
 
         let helpers: Vec<Vec<BaseElement>> = (0..1).map(|_| vec![ZERO; init_trace_length]).collect();
 
         // reverse inputs to pop them in order
-        let mut tape_a = inputs.get_public().to_vec();
+        let mut tape_a = inputs.public().to_vec();
         tape_a.reverse();
-        let mut tape_b = inputs.get_secret().to_vec();
+        let mut tape_b = inputs.secret().to_vec();
         tape_b.reverse();
 
         Stack {
@@ -40,7 +40,7 @@ impl Stack {
             tape_a,
             tape_b,
             depth: 0,
-            server_key: inputs.get_server_key(),
+            server_key: inputs.server_key(),
             trace_length: init_trace_length,
         }
     }

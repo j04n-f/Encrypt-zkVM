@@ -13,3 +13,4 @@ crypto = { path = "../crypto" }
 
 [dev-dependencies]
 tempfile = { workspace = true }
+air = { path = "../air" }

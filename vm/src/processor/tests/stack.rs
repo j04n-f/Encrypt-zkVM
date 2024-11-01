@@ -4,7 +4,11 @@ use errors::StackError;
 
 #[test]
 fn test_fill_trace_with_noop() {
-    let mut stack = Stack::new(&program_inputs(), 8);
+    let server_key = server_key();
+    let values = values(&server_key);
+    let inputs = inputs(&values, &server_key);
+
+    let mut stack = Stack::new(&inputs, 8);
 
     for _ in 0..4 {
         stack.execute_op(&Operation::push(2)).unwrap();
@@ -25,7 +29,11 @@ mod mul {
 
     #[test]
     fn test_operation_execution() {
-        let mut stack = Stack::new(&program_inputs(), 8);
+        let server_key = server_key();
+        let values = values(&server_key);
+        let inputs = inputs(&values, &server_key);
+
+        let mut stack = Stack::new(&inputs, 8);
 
         stack.execute_op(&Operation::push(2)).unwrap();
         stack.execute_op(&Operation::push(2)).unwrap();
@@ -44,7 +52,11 @@ mod mul {
 
     #[test]
     fn test_stack_underflow_error() {
-        let mut stack = Stack::new(&program_inputs(), 8);
+        let server_key = server_key();
+        let values = values(&server_key);
+        let inputs = inputs(&values, &server_key);
+
+        let mut stack = Stack::new(&inputs, 8);
 
         stack.execute_op(&Operation::push(2)).unwrap();
 
@@ -62,7 +74,11 @@ mod add {
 
     #[test]
     fn test_operation_execution() {
-        let mut stack = Stack::new(&program_inputs(), 8);
+        let server_key = server_key();
+        let values = values(&server_key);
+        let inputs = inputs(&values, &server_key);
+
+        let mut stack = Stack::new(&inputs, 8);
 
         stack.execute_op(&Operation::push(2)).unwrap();
         stack.execute_op(&Operation::push(2)).unwrap();
@@ -81,7 +97,11 @@ mod add {
 
     #[test]
     fn test_stack_underflow_error() {
-        let mut stack = Stack::new(&program_inputs(), 8);
+        let server_key = server_key();
+        let values = values(&server_key);
+        let inputs = inputs(&values, &server_key);
+
+        let mut stack = Stack::new(&inputs, 8);
 
         stack.execute_op(&Operation::push(2)).unwrap();
 
@@ -99,7 +119,11 @@ mod noop {
 
     #[test]
     fn test_operation_execution() {
-        let mut stack = Stack::new(&program_inputs(), 8);
+        let server_key = server_key();
+        let values = values(&server_key);
+        let inputs = inputs(&values, &server_key);
+
+        let mut stack = Stack::new(&inputs, 8);
 
         stack.execute_op(&Operation::noop()).unwrap();
 
@@ -118,7 +142,11 @@ mod push {
 
     #[test]
     fn test_operation_execution() {
-        let mut stack = Stack::new(&program_inputs(), 8);
+        let server_key = server_key();
+        let values = values(&server_key);
+        let inputs = inputs(&values, &server_key);
+
+        let mut stack = Stack::new(&inputs, 8);
 
         stack.execute_op(&Operation::push(5)).unwrap();
 
@@ -140,7 +168,11 @@ mod read {
 
     #[test]
     fn test_operation_execution() {
-        let mut stack = Stack::new(&program_inputs(), 8);
+        let server_key = server_key();
+        let values = values(&server_key);
+        let inputs = inputs(&values, &server_key);
+
+        let mut stack = Stack::new(&inputs, 8);
 
         stack.execute_op(&Operation::read()).unwrap();
 
@@ -157,7 +189,10 @@ mod read {
 
     #[test]
     fn test_empty_inputs_error() {
-        let mut stack = Stack::new(&empty_program_inputs(), 8);
+        let server_key = server_key();
+        let inputs = empty_inputs(&server_key);
+
+        let mut stack = Stack::new(&inputs, 8);
 
         let op = Operation::read();
 
@@ -173,8 +208,9 @@ mod read2 {
 
     #[test]
     fn test_operation_execution() {
-        let inputs = program_inputs();
-        let sct_inputs = inputs.get_secret().to_vec();
+        let server_key = server_key();
+        let values = values(&server_key);
+        let inputs = inputs(&values, &server_key);
 
         let mut stack = Stack::new(&inputs, 8);
 
@@ -188,14 +224,17 @@ mod read2 {
         assert_eq!(trace_row0[0], to_element(0));
         assert_eq!(trace_row1[0], to_element(5));
 
-        let input_ct = sct_inputs[0].ciphertext().to_vec();
+        let input_ct = inputs.secret()[0].ciphertext().to_vec();
 
         assert_eq!(trace_row1[1..6], input_ct);
     }
 
     #[test]
     fn test_empty_inputs_error() {
-        let mut stack = Stack::new(&empty_program_inputs(), 8);
+        let server_key = server_key();
+        let inputs = empty_inputs(&server_key);
+
+        let mut stack = Stack::new(&inputs, 8);
 
         let op = Operation::read2();
 
@@ -211,9 +250,9 @@ mod sadd {
 
     #[test]
     fn test_operation_execution() {
-        let inputs = program_inputs();
-        let pub_inputs = inputs.get_public().to_vec();
-        let sct_inputs = inputs.get_secret().to_vec();
+        let server_key = server_key();
+        let values = values(&server_key);
+        let inputs = inputs(&values, &server_key);
 
         let mut stack = Stack::new(&inputs, 8);
 
@@ -229,9 +268,9 @@ mod sadd {
         assert_eq!(trace_row2[0], to_element(6));
         assert_eq!(trace_row3[0], to_element(5));
 
-        let scalar = BaseElement::from(pub_inputs[0]);
+        let scalar = BaseElement::from(inputs.public()[0]);
 
-        let result = inputs.get_server_key().scalar_add(&scalar, &sct_inputs[0]);
+        let result = inputs.server_key().scalar_add(&scalar, &inputs.secret()[0]);
         let result_ct = result.ciphertext().to_vec();
 
         assert_eq!(trace_row3[1..6], result_ct);
@@ -239,7 +278,11 @@ mod sadd {
 
     #[test]
     fn test_stack_underflow_error() {
-        let mut stack = Stack::new(&program_inputs(), 8);
+        let server_key = server_key();
+        let values = values(&server_key);
+        let inputs = inputs(&values, &server_key);
+
+        let mut stack = Stack::new(&inputs, 8);
 
         stack.execute_op(&Operation::read2()).unwrap();
 
@@ -257,9 +300,9 @@ mod smul {
 
     #[test]
     fn test_operation_execution() {
-        let inputs = program_inputs();
-        let pub_inputs = inputs.get_public().to_vec();
-        let sct_inputs = inputs.get_secret().to_vec();
+        let server_key = server_key();
+        let values = values(&server_key);
+        let inputs = inputs(&values, &server_key);
 
         let mut stack = Stack::new(&inputs, 8);
 
@@ -275,9 +318,9 @@ mod smul {
         assert_eq!(trace_row2[0], to_element(6));
         assert_eq!(trace_row3[0], to_element(5));
 
-        let scalar = BaseElement::from(pub_inputs[0]);
+        let scalar = BaseElement::from(inputs.public()[0]);
 
-        let result = inputs.get_server_key().scalar_mul(&scalar, &sct_inputs[0]);
+        let result = inputs.server_key().scalar_mul(&scalar, &inputs.secret()[0]);
         let result_ct = result.ciphertext().to_vec();
 
         assert_eq!(trace_row3[1..6], result_ct);
@@ -285,7 +328,11 @@ mod smul {
 
     #[test]
     fn test_stack_underflow_error() {
-        let mut stack = Stack::new(&program_inputs(), 8);
+        let server_key = server_key();
+        let values = values(&server_key);
+        let inputs = inputs(&values, &server_key);
+
+        let mut stack = Stack::new(&inputs, 8);
 
         stack.execute_op(&Operation::read2()).unwrap();
 
@@ -303,8 +350,9 @@ mod add2 {
 
     #[test]
     fn test_operation_execution() {
-        let inputs = program_inputs();
-        let sct_inputs = inputs.get_secret().to_vec();
+        let server_key = server_key();
+        let values = values(&server_key);
+        let inputs = inputs(&values, &server_key);
 
         let mut stack = Stack::new(&inputs, 8);
 
@@ -320,7 +368,7 @@ mod add2 {
         assert_eq!(trace_row2[0], to_element(10));
         assert_eq!(trace_row3[0], to_element(5));
 
-        let result = inputs.get_server_key().add(&sct_inputs[0], &sct_inputs[1]);
+        let result = inputs.server_key().add(&inputs.secret()[0], &inputs.secret()[1]);
         let result_ct = result.ciphertext().to_vec();
 
         assert_eq!(trace_row3[1..6], result_ct);
@@ -328,7 +376,11 @@ mod add2 {
 
     #[test]
     fn test_stack_underflow_error() {
-        let mut stack = Stack::new(&program_inputs(), 8);
+        let server_key = server_key();
+        let values = values(&server_key);
+        let inputs = inputs(&values, &server_key);
+
+        let mut stack = Stack::new(&inputs, 8);
 
         stack.execute_op(&Operation::read2()).unwrap();
 

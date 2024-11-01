@@ -41,27 +41,27 @@ const MAX_STACK_DEPTH: usize = 16;
 // add a random value to the last row and allow 2 transition exemptions
 const NUM_RAND_ROWS: usize = 1;
 
-pub struct Processor {
-    stack: Stack,
+pub struct Processor<'a> {
+    stack: Stack<'a>,
     decoder: Decoder,
     system: System,
     chiplets: Chiplets,
 }
 
-impl Processor {
-    fn new(inputs: ProgramInputs) -> Processor {
+impl<'a> Processor<'a> {
+    fn new(inputs: &'a ProgramInputs) -> Self {
         Processor {
-            stack: Stack::new(&inputs, MIN_TRACE_LENGTH),
+            stack: Stack::new(inputs, MIN_TRACE_LENGTH),
             decoder: Decoder::new(MIN_TRACE_LENGTH),
             system: System::new(MIN_TRACE_LENGTH),
             chiplets: Chiplets::new(MIN_TRACE_LENGTH),
         }
     }
 
-    pub fn run(program: Program, inputs: ProgramInputs) -> Result<Processor, ProcessorError> {
+    pub fn run(program: &Program, inputs: &'a ProgramInputs) -> Result<Self, ProcessorError> {
         let mut processor = Processor::new(inputs);
 
-        for op in program.get_code().iter() {
+        for op in program.code().iter() {
             processor.execute_op(op)?;
         }
 
@@ -94,7 +94,7 @@ impl Processor {
         Ok(trace)
     }
 
-    pub fn get_stack_output(&self) -> [BaseElement; MAX_STACK_DEPTH] {
+    pub fn output(&self) -> [BaseElement; MAX_STACK_DEPTH] {
         // trace computation does not change the clock value
         // clock value is always set to the last stack row
         self.stack.current_stack_state()
@@ -114,11 +114,5 @@ impl Processor {
         };
 
         Ok(())
-    }
-}
-
-impl std::fmt::Debug for Processor {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "output is {:?}", self.get_stack_output())
     }
 }

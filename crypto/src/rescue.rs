@@ -21,6 +21,12 @@ pub struct Rescue128 {
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Default)]
 pub struct Hash([BaseElement; DIGEST_SIZE]);
 
+impl Default for Rescue128 {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Rescue128 {
     pub fn new() -> Self {
         Rescue128 {

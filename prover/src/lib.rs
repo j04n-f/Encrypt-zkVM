@@ -14,19 +14,19 @@ type Blake3 = Blake3_256<BaseElement>;
 
 // Our prover needs to hold STARK protocol parameters which are specified via ProofOptions
 // struct.
-pub struct ExecutionProver {
+pub struct ExecutionProver<'a> {
     options: ProofOptions,
     program_hash: [BaseElement; 2],
     stack_outputs: [BaseElement; 16],
-    server_key: ServerKey,
+    server_key: &'a ServerKey,
 }
 
-impl ExecutionProver {
+impl<'a> ExecutionProver<'a> {
     pub fn new(
         options: ProofOptions,
         program_hash: [BaseElement; 2],
         stack_outputs: [BaseElement; 16],
-        server_key: ServerKey,
+        server_key: &'a ServerKey,
     ) -> Self {
         Self {
             options,
@@ -37,7 +37,7 @@ impl ExecutionProver {
     }
 }
 
-impl Prover for ExecutionProver {
+impl Prover for ExecutionProver<'_> {
     type BaseField = BaseElement;
     type Air = ProcessorAir;
     type Trace = TraceTable<BaseElement>;

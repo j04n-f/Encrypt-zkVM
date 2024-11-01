@@ -1,6 +1,6 @@
 // use fhe::{LweParameters, ServerKey};
 
-use fhe::{LweParameters, ServerKey};
+use fhe::{FheUInt8, LweParameters, ServerKey};
 
 use super::*;
 
@@ -20,8 +20,12 @@ mod chiplets;
 fn test_trace() {
     let source = "push.5\npush.3\nadd";
     let program = Program::compile(source).unwrap();
-    let hash = program.get_hash().to_elements().to_vec();
-    let processor = Processor::run(program, program_inputs()).unwrap();
+
+    let server_key = server_key();
+    let values = values(&server_key);
+    let inputs = inputs(&values, &server_key);
+
+    let processor = Processor::run(&program, &inputs).unwrap();
     let trace = processor.trace().unwrap();
     let trace_row31 = trace_state(31, &trace);
 
@@ -31,7 +35,7 @@ fn test_trace() {
 
     assert_eq!(trace_row31[6], to_element(0));
 
-    assert_eq!(trace_row31[7..9], hash);
+    assert_eq!(trace_row31[7..9], program.hash().to_elements());
     assert_eq!(trace_row31[9..11], [ZERO, ZERO]);
 
     assert_eq!(trace_row31[11], to_element(1));
@@ -48,9 +52,7 @@ fn server_key() -> ServerKey {
     ServerKey::new(parameters)
 }
 
-fn program_inputs() -> ProgramInputs {
-    let server_key = server_key();
-
+fn values(server_key: &ServerKey) -> ([u8; 2], [FheUInt8; 2]) {
     let clear_x = 33u8;
     let clear_y = 7u8;
 
@@ -59,11 +61,15 @@ fn program_inputs() -> ProgramInputs {
     let x = server_key.encrypt(clear_x);
     let y = server_key.encrypt(clear_y);
 
-    ProgramInputs::new(&[a, b], &[x, y], &server_key)
+    ([a, b], [x, y])
 }
 
-fn empty_program_inputs() -> ProgramInputs {
-    ProgramInputs::new(&[], &[], &server_key())
+fn inputs<'a>(inputs: &'a ([u8; 2], [FheUInt8; 2]), server_key: &'a ServerKey) -> ProgramInputs<'a> {
+    ProgramInputs::new(&inputs.0, &inputs.1, server_key)
+}
+
+fn empty_inputs(server_key: &ServerKey) -> ProgramInputs {
+    ProgramInputs::new(&[], &[], server_key)
 }
 
 fn to_element(value: u8) -> BaseElement {

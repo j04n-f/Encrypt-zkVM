@@ -1,5 +1,6 @@
 use std::error::Error;
 
+#[derive(Debug)]
 pub struct ProgramError {
     message: String,
     step: usize,
@@ -48,12 +49,6 @@ impl ProgramError {
             message: format!("malformed instruction {}, parameter '{}' is invalid", op[0], op[1]),
             step,
         }
-    }
-}
-
-impl std::fmt::Debug for ProgramError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "program error at {}: {}", self.step, self.message)
     }
 }
 

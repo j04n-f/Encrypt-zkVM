@@ -8,7 +8,7 @@ mod add {
     fn test_parse() {
         let source = "add";
         let program = Program::compile(source).unwrap();
-        let code = program.get_code();
+        let code = program.code();
 
         assert_eq!(code[0], Operation::add());
     }
@@ -33,7 +33,7 @@ mod mul {
     fn test_parse() {
         let source = "mul";
         let program = Program::compile(source).unwrap();
-        let code = program.get_code();
+        let code = program.code();
 
         assert_eq!(code[0], Operation::mul());
     }
@@ -58,7 +58,7 @@ mod smul {
     fn test_parse() {
         let source = "smul";
         let program = Program::compile(source).unwrap();
-        let code = program.get_code();
+        let code = program.code();
 
         assert_eq!(code[0], Operation::smul());
     }
@@ -83,7 +83,7 @@ mod sadd {
     fn test_parse() {
         let source = "sadd";
         let program = Program::compile(source).unwrap();
-        let code = program.get_code();
+        let code = program.code();
 
         assert_eq!(code[0], Operation::sadd());
     }
@@ -108,7 +108,7 @@ mod add2 {
     fn test_parse() {
         let source = "add2";
         let program = Program::compile(source).unwrap();
-        let code = program.get_code();
+        let code = program.code();
 
         assert_eq!(code[0], Operation::add2());
     }
@@ -133,7 +133,7 @@ mod read {
     fn test_parse() {
         let source = "read";
         let program = Program::compile(source).unwrap();
-        let code = program.get_code();
+        let code = program.code();
 
         assert_eq!(code[0], Operation::read());
     }
@@ -158,7 +158,7 @@ mod read2 {
     fn test_parse() {
         let source = "read2";
         let program = Program::compile(source).unwrap();
-        let code = program.get_code();
+        let code = program.code();
 
         assert_eq!(code[0], Operation::read2());
     }
@@ -183,7 +183,7 @@ mod push {
     fn test_parse() {
         let source = "push.1";
         let program = Program::compile(source).unwrap();
-        let code = program.get_code();
+        let code = program.code();
 
         assert_eq!(code[0], Operation::push(1));
     }

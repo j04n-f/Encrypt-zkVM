@@ -85,7 +85,7 @@ fn test_compile_program() {
 fn test_program_padding() {
     let source = "push.1\npush.2\nadd\nread\nread\nread\nmul\nadd\nadd";
     let program = Program::compile(source).unwrap();
-    let code = program.get_code();
+    let code = program.code();
 
     assert_eq!(code.len() as u8 % 16, 0);
     assert_eq!(code[8], Operation::push(2));

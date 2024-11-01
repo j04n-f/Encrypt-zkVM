@@ -85,8 +85,8 @@ impl OutputData {
         &self.hash
     }
 
-    pub fn proof(&self) -> &Proof {
-        &self.proof
+    pub fn proof(self) -> Proof {
+        self.proof
     }
 
     pub fn output(&self) -> [BaseElement; 16] {
